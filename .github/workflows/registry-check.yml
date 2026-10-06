@@ -30,5 +30,10 @@ jobs:
           registry: ${{ vars.REGISTRY_URL }}
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
+      - name: Check authenticated upload access and cancel the probe
+        env:
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: python3 scripts/check-registry-upload.py
       - name: Record result
-        run: echo 'Registry login succeeded. No image was pushed; publication acceptance remains separate.' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'Registry login and upload creation/cancellation succeeded. No image was pushed; publication acceptance remains separate.' >> "$GITHUB_STEP_SUMMARY"

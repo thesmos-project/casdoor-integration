@@ -31,6 +31,20 @@ This is not an independent security/legal review or production approval.
 - Fresh source preparation uses the official Alpine v3.24 distfiles mirror, with
   original recipe checksums retained; an uncached apk-tools archive passed this check.
 - Publication scan found no protected fixture values or private checkout paths.
+- Basic-auth registry upload probe checked with nine local cases: accepted upload
+  and cancellation, denied credentials/permissions, rejected redirects and foreign
+  locations, plain/encoded path traversal, and failed cleanup. Credentials and
+  upload-state tokens are omitted from its output. No image bytes or build steps
+  changed in this permission-check revision.
+
+## Registry publication status
+
+[The owner-approved publication attempt](https://github.com/thesmos-project/casdoor-integration/actions/runs/37510570423)
+passed source/build/distribution/runtime checks but the registry rejected upload
+with an authentication failure. No version tag was created, and signing and
+published-digest testing did not run. A successful login against the public read
+endpoint does not prove the configured credentials have upload permission.
+The next attempt checks authenticated upload creation and cancellation first.
 
 ## Distribution limits
 

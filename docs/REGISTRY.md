@@ -20,7 +20,17 @@ value; leave it unset when sharing organization credentials.
 
 Run **Actions → Check registry access → Run workflow** on `main` to verify
 organization/repository settings and registry login. It does not push an image or
-prove image push permissions. It does not use any `release` environment overrides.
+publish an image manifest. For a Basic-auth registry it also creates an empty,
+authenticated blob upload and immediately cancels that same upload. This checks
+upload access, not acceptance of every image/attestation manifest type. The check
+refuses redirects and unexpected cancellation locations. Bearer-token registries
+need a separate permission-check implementation. It does not use any `release`
+environment overrides.
+
+A registry that permits anonymous reads can report a successful Docker login
+without proving the supplied account can upload. Check the account's push rights
+for the normalized `REGISTRY_IMAGE` path. A failed upload probe occurs before the
+publication workflow spends time building the image.
 
 The project environment is configured to require owner review, restrict deployment
 to `main`, and disable administrator bypass. Preserve these protections. Use a
@@ -42,7 +52,8 @@ A failed post-push check leaves an unaccepted artifact that must not be advertis
 There is no automatic upstream PR,
 registry publishing on push, or `latest` tag.
 
-Credentials go only to the registry login action. They are not build arguments.
+Credentials go only to the registry login action and the direct upload check.
+They are not build arguments, and the upload check does not print their values.
 The workflow does not need permission to write to the original Casdoor repository.
 
 To verify a released image, set `IMAGE_REPOSITORY` to its complete registry path
