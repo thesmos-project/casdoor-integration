@@ -6,10 +6,10 @@ This is an independently maintained integration project, without upstream endors
 
 ## Status
 
-Initial project scaffold. No patches, container images, or production deployment
-recipes have been released from this repository. Production acceptance is still
-in progress in a separate private evaluation workspace. The upstream reference
-in `upstream.lock.json` identifies the evaluated source, not a supported release.
+Source candidate: five attributed patch layers and a complete backend/frontend
+container builder are available for evaluation. No registry image or supported
+production release has been published. Production acceptance remains in progress.
+`upstream.lock.json` records the exact upstream revision and ordered patch checksums.
 
 The planned integration covers Community OIDC, Enterprise SAML, SCIM provisioning
 in either direction with an explicit authority per scope, and administrator
@@ -22,20 +22,43 @@ See [MAINTENANCE.md](MAINTENANCE.md). Contributions can be submitted to this
 repository. Upstream contributions are manual: automation must never create an
 issue, pull request, comment, or branch in the original Casdoor repository.
 
-Our distributable integration source will be published here after review.
-Private evaluation history, credentials, customer data and commercial source
-are excluded from publication.
+The reviewed Casdoor patch series is available in `patches/`. Private evaluation
+history, credentials, customer data and commercial source are excluded.
 
 ## Planned container distribution
 
 A registry and repository path will be selected by the project owner. Registry
 credentials belong in GitHub Actions secrets, never source files or image layers.
-There is currently no image publishing workflow.
+The **Publish accepted image** workflow is manual and currently blocked by
+`release-policy.json`. See [registry setup](docs/REGISTRY.md).
 
 The intended release includes a versioned image, matching build source, upstream
 revision, patch checksums, dependency licences, an SBOM and signed provenance.
 Deployments should pin the immutable image digest. Compose is the first planned
 recipe; Kubernetes support requires separate acceptance.
+
+## Build the candidate
+
+Requires Git, Python 3 and Docker with Buildx. The current target is Linux amd64.
+
+```sh
+python3 scripts/validate-project.py
+python3 scripts/build-image.py
+```
+
+This fetches the pinned upstream revision, verifies its tag and every patch
+checksum, applies all five layers, runs selected Go regressions under the race
+detector, typechecks the frontend, and compiles both components. Go, Node,
+Yarn and runtime base versions are recorded in `build.lock.json`.
+
+The output is the local image `casdoor-integration:candidate`. Prepared source,
+logs and build metadata belong in ignored `.local/`. A changed existing source
+export is refused; move it aside before preparing a different candidate.
+This controls source/build inputs; it does not promise byte-identical images
+while runtime package repositories can change.
+
+See [patch details](docs/PATCHES.md), [local component recipe](recipes/README.md)
+and [remaining release requirements](docs/RELEASE-STATUS.md).
 
 ## Configuration
 

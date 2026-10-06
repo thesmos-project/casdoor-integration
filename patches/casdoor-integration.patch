@@ -1,0 +1,1517 @@
+diff --git a/controllers/application.go b/controllers/application.go
+index f62ec15..5f66b8d 100644
+--- a/controllers/application.go
++++ b/controllers/application.go
+@@ -1,4 +1,5 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -274,6 +275,10 @@ func (c *ApiController) AddApplication() {
+ 		c.ResponseError(err.Error())
+ 		return
+ 	}
++	if len(application.RetainedSigningCerts) > 0 && !c.IsGlobalAdmin() {
++		c.ResponseError(c.T("auth:Unauthorized operation"))
++		return
++	}
+ 
+ 	if !c.requireOrganizationPermission(application.Organization) {
+ 		return
+diff --git a/controllers/token.go b/controllers/token.go
+index 2a90442..ee15722 100644
+--- a/controllers/token.go
++++ b/controllers/token.go
+@@ -1,4 +1,5 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -220,6 +221,7 @@ func (c *ApiController) GetOAuthToken() {
+ 	grantType := c.Ctx.Input.Query("grant_type")
+ 	code := c.Ctx.Input.Query("code")
+ 	verifier := c.Ctx.Input.Query("code_verifier")
++	redirectUri := c.Ctx.Input.Query("redirect_uri")
+ 	scope := c.Ctx.Input.Query("scope")
+ 	nonce := c.Ctx.Input.Query("nonce")
+ 	username := c.Ctx.Input.Query("username")
+@@ -260,6 +262,9 @@ func (c *ApiController) GetOAuthToken() {
+ 			if code == "" {
+ 				code = tokenRequest.Code
+ 			}
++			if redirectUri == "" {
++				redirectUri = tokenRequest.RedirectUri
++			}
+ 			if verifier == "" {
+ 				verifier = tokenRequest.Verifier
+ 			}
+@@ -387,7 +392,7 @@ func (c *ApiController) GetOAuthToken() {
+ 		return
+ 	}
+ 
+-	token, err := object.GetOAuthToken(grantType, clientId, clientSecret, code, verifier, scope, nonce, username, password, host, refreshToken, tag, avatar, c.GetAcceptLanguage(), subjectToken, subjectTokenType, assertion, clientAssertion, clientAssertionType, audience, resource, dpopProof, util.GetClientIpFromRequest(c.Ctx.Request))
++	token, err := object.GetOAuthToken(grantType, clientId, clientSecret, code, verifier, scope, nonce, username, password, host, refreshToken, tag, avatar, c.GetAcceptLanguage(), subjectToken, subjectTokenType, assertion, clientAssertion, clientAssertionType, audience, resource, dpopProof, util.GetClientIpFromRequest(c.Ctx.Request), redirectUri)
+ 	if err != nil {
+ 		c.ResponseError(err.Error())
+ 		return
+@@ -561,23 +566,14 @@ func (c *ApiController) IntrospectToken() {
+ 	}
+ 
+ 	tokenTypeHint := c.Ctx.Input.Query("token_type_hint")
+-	var token *object.Token
+-	if tokenTypeHint != "" {
+-		token, err = object.GetTokenByTokenValue(tokenValue, tokenTypeHint)
+-		if err != nil {
+-			c.ResponseTokenError(object.InvalidRequest, err.Error())
+-			return
+-		}
+-		if token == nil || token.ExpiresIn <= 0 {
+-			respondWithInactiveToken()
+-			return
+-		}
+-
+-		if token.ExpiresIn <= 0 {
+-			c.Data["json"] = &object.IntrospectionResponse{Active: false}
+-			c.ServeJSON()
+-			return
+-		}
++	token, err := object.GetApplicationToken(tokenValue, tokenTypeHint, application)
++	if err != nil {
++		c.ResponseTokenError(object.InvalidRequest, err.Error())
++		return
++	}
++	if token == nil {
++		respondWithInactiveToken()
++		return
+ 	}
+ 
+ 	var introspectionResponse object.IntrospectionResponse
+@@ -637,18 +633,6 @@ func (c *ApiController) IntrospectToken() {
+ 		}
+ 	}
+ 
+-	if tokenTypeHint == "" {
+-		token, err = object.GetTokenByTokenValue(tokenValue, introspectionResponse.TokenType)
+-		if err != nil {
+-			c.ResponseTokenError(object.InvalidRequest, err.Error())
+-			return
+-		}
+-		if token == nil || token.ExpiresIn <= 0 {
+-			respondWithInactiveToken()
+-			return
+-		}
+-	}
+-
+ 	if token != nil {
+ 		// The token's user may have been forbidden or deleted after the token was issued
+ 		isUserActive, err := token.IsUserActive()
+diff --git a/controllers/types.go b/controllers/types.go
+index 689aa67..ce3b0be 100644
+--- a/controllers/types.go
++++ b/controllers/types.go
+@@ -1,4 +1,5 @@
+ // Copyright 2022 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -22,6 +23,7 @@ type TokenRequest struct {
+ 	ClientAssertionType string `json:"client_assertion_type"`
+ 	GrantType           string `json:"grant_type"`
+ 	Code                string `json:"code"`
++	RedirectUri         string `json:"redirect_uri"`
+ 	Verifier            string `json:"code_verifier"`
+ 	Scope               string `json:"scope"`
+ 	Nonce               string `json:"nonce"`
+diff --git a/object/application.go b/object/application.go
+index 2e3582f..09d195a 100644
+--- a/object/application.go
++++ b/object/application.go
+@@ -1,4 +1,5 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -17,6 +18,7 @@ package object
+ import (
+ 	"errors"
+ 	"fmt"
++	"time"
+ 
+ 	"github.com/casdoor/casdoor/i18n"
+ 	"github.com/casdoor/casdoor/util"
+@@ -98,56 +100,58 @@ type Application struct {
+ 	Name        string `xorm:"varchar(100) notnull pk" json:"name"`
+ 	CreatedTime string `xorm:"varchar(100)" json:"createdTime"`
+ 
+-	DisplayName                  string          `xorm:"varchar(100)" json:"displayName"`
+-	Category                     string          `xorm:"varchar(20)" json:"category"`
+-	Type                         string          `xorm:"varchar(20)" json:"type"`
+-	Scopes                       []*ScopeItem    `xorm:"mediumtext" json:"scopes"`
+-	Logo                         string          `xorm:"varchar(200)" json:"logo"`
+-	LogoDark                     string          `xorm:"varchar(200)" json:"logoDark"`
+-	Title                        string          `xorm:"varchar(100)" json:"title"`
+-	Favicon                      string          `xorm:"varchar(200)" json:"favicon"`
+-	Order                        int             `json:"order"`
+-	HomepageUrl                  string          `xorm:"varchar(100)" json:"homepageUrl"`
+-	Description                  string          `xorm:"mediumtext" json:"description"`
+-	Organization                 string          `xorm:"varchar(100)" json:"organization"`
+-	Cert                         string          `xorm:"varchar(100)" json:"cert"`
+-	DefaultGroup                 string          `xorm:"varchar(100)" json:"defaultGroup"`
+-	DefaultTag                   string          `xorm:"varchar(100)" json:"defaultTag"`
+-	HeaderHtml                   string          `xorm:"mediumtext" json:"headerHtml"`
+-	PageHtml                     string          `xorm:"mediumtext" json:"pageHtml"`
+-	EnablePassword               bool            `json:"enablePassword"`
+-	EnableSignUp                 bool            `json:"enableSignUp"`
+-	EnableGuestSignin            bool            `json:"enableGuestSignin"`
+-	DisableSignin                bool            `json:"disableSignin"`
+-	EnableSigninSession          bool            `json:"enableSigninSession"`
+-	EnableAutoSignin             bool            `json:"enableAutoSignin"`
+-	EnableCodeSignin             bool            `json:"enableCodeSignin"`
+-	EnableExclusiveSignin        bool            `json:"enableExclusiveSignin"`
+-	MaxSessions                  int             `json:"maxSessions"`
+-	EnableSamlCompress           bool            `json:"enableSamlCompress"`
+-	EnableSamlC14n10             bool            `json:"enableSamlC14n10"`
+-	EnableSamlPostBinding        bool            `json:"enableSamlPostBinding"`
+-	DisableSamlAttributes        bool            `json:"disableSamlAttributes"`
+-	EnableSamlAssertionSignature bool            `json:"enableSamlAssertionSignature"`
+-	UseEmailAsSamlNameId         bool            `json:"useEmailAsSamlNameId"`
+-	EnableWebAuthn               bool            `json:"enableWebAuthn"`
+-	EnableLinkWithEmail          bool            `json:"enableLinkWithEmail"`
+-	OrgChoiceMode                string          `json:"orgChoiceMode"`
+-	SamlReplyUrl                 string          `xorm:"varchar(500)" json:"samlReplyUrl"`
+-	SamlSingleLogoutUrl          string          `xorm:"mediumtext" json:"samlSingleLogoutUrl"`
+-	Providers                    []*ProviderItem `xorm:"mediumtext" json:"providers"`
+-	SigninMethods                []*SigninMethod `xorm:"varchar(2000)" json:"signinMethods"`
+-	SignupItems                  []*SignupItem   `xorm:"varchar(3000)" json:"signupItems"`
+-	SigninItems                  []*SigninItem   `xorm:"mediumtext" json:"signinItems"`
+-	GrantTypes                   []string        `xorm:"varchar(1000)" json:"grantTypes"`
+-	OrganizationObj              *Organization   `xorm:"-" json:"organizationObj"`
+-	CertPublicKey                string          `xorm:"-" json:"certPublicKey"`
+-	Tags                         []string        `xorm:"mediumtext" json:"tags"`
+-	SamlAttributes               []*SamlItem     `xorm:"varchar(1000)" json:"samlAttributes"`
+-	SamlHashAlgorithm            string          `xorm:"varchar(20)" json:"samlHashAlgorithm"`
+-	SamlC14nPrefix               string          `xorm:"varchar(100)" json:"samlC14nPrefix"`
+-	IsShared                     bool            `json:"isShared"`
+-	IpRestriction                string          `json:"ipRestriction"`
++	DisplayName                  string                 `xorm:"varchar(100)" json:"displayName"`
++	Category                     string                 `xorm:"varchar(20)" json:"category"`
++	Type                         string                 `xorm:"varchar(20)" json:"type"`
++	Scopes                       []*ScopeItem           `xorm:"mediumtext" json:"scopes"`
++	Logo                         string                 `xorm:"varchar(200)" json:"logo"`
++	LogoDark                     string                 `xorm:"varchar(200)" json:"logoDark"`
++	Title                        string                 `xorm:"varchar(100)" json:"title"`
++	Favicon                      string                 `xorm:"varchar(200)" json:"favicon"`
++	Order                        int                    `json:"order"`
++	HomepageUrl                  string                 `xorm:"varchar(100)" json:"homepageUrl"`
++	Description                  string                 `xorm:"mediumtext" json:"description"`
++	Organization                 string                 `xorm:"varchar(100)" json:"organization"`
++	Cert                         string                 `xorm:"varchar(100)" json:"cert"`
++	RetainedSigningCerts         []*RetainedSigningCert `xorm:"mediumtext" json:"retainedSigningCerts"`
++	DefaultGroup                 string                 `xorm:"varchar(100)" json:"defaultGroup"`
++	DefaultTag                   string                 `xorm:"varchar(100)" json:"defaultTag"`
++	HeaderHtml                   string                 `xorm:"mediumtext" json:"headerHtml"`
++	PageHtml                     string                 `xorm:"mediumtext" json:"pageHtml"`
++	EnablePassword               bool                   `json:"enablePassword"`
++	EnableSignUp                 bool                   `json:"enableSignUp"`
++	EnableGuestSignin            bool                   `json:"enableGuestSignin"`
++	DisableSignin                bool                   `json:"disableSignin"`
++	EnableSigninSession          bool                   `json:"enableSigninSession"`
++	EnableAutoSignin             bool                   `json:"enableAutoSignin"`
++	EnableCodeSignin             bool                   `json:"enableCodeSignin"`
++	EnableExclusiveSignin        bool                   `json:"enableExclusiveSignin"`
++	MaxSessions                  int                    `json:"maxSessions"`
++	EnableSamlCompress           bool                   `json:"enableSamlCompress"`
++	EnableSamlC14n10             bool                   `json:"enableSamlC14n10"`
++	EnableSamlPostBinding        bool                   `json:"enableSamlPostBinding"`
++	DisableSamlAttributes        bool                   `json:"disableSamlAttributes"`
++	EnableSamlAssertionSignature bool                   `json:"enableSamlAssertionSignature"`
++	UseEmailAsSamlNameId         bool                   `json:"useEmailAsSamlNameId"`
++	UsePersistentSamlNameId      bool                   `json:"usePersistentSamlNameId"`
++	EnableWebAuthn               bool                   `json:"enableWebAuthn"`
++	EnableLinkWithEmail          bool                   `json:"enableLinkWithEmail"`
++	OrgChoiceMode                string                 `json:"orgChoiceMode"`
++	SamlReplyUrl                 string                 `xorm:"varchar(500)" json:"samlReplyUrl"`
++	SamlSingleLogoutUrl          string                 `xorm:"mediumtext" json:"samlSingleLogoutUrl"`
++	Providers                    []*ProviderItem        `xorm:"mediumtext" json:"providers"`
++	SigninMethods                []*SigninMethod        `xorm:"varchar(2000)" json:"signinMethods"`
++	SignupItems                  []*SignupItem          `xorm:"varchar(3000)" json:"signupItems"`
++	SigninItems                  []*SigninItem          `xorm:"mediumtext" json:"signinItems"`
++	GrantTypes                   []string               `xorm:"varchar(1000)" json:"grantTypes"`
++	OrganizationObj              *Organization          `xorm:"-" json:"organizationObj"`
++	CertPublicKey                string                 `xorm:"-" json:"certPublicKey"`
++	Tags                         []string               `xorm:"mediumtext" json:"tags"`
++	SamlAttributes               []*SamlItem            `xorm:"varchar(1000)" json:"samlAttributes"`
++	SamlHashAlgorithm            string                 `xorm:"varchar(20)" json:"samlHashAlgorithm"`
++	SamlC14nPrefix               string                 `xorm:"varchar(100)" json:"samlC14nPrefix"`
++	IsShared                     bool                   `json:"isShared"`
++	IpRestriction                string                 `json:"ipRestriction"`
+ 
+ 	ClientId                string     `xorm:"varchar(100)" json:"clientId"`
+ 	ClientSecret            string     `xorm:"varchar(100)" json:"clientSecret"`
+@@ -438,6 +442,7 @@ func UpdateApplication(id string, application *Application, isGlobalAdmin bool,
+ 
+ 	if !isGlobalAdmin {
+ 		KeepApplicationCustomHtml(application, oldApplication)
++		application.RetainedSigningCerts = oldApplication.RetainedSigningCerts
+ 	}
+ 
+ 	application.Owner = owner
+@@ -476,6 +481,9 @@ func UpdateApplication(id string, application *Application, isGlobalAdmin bool,
+ 		return false, err
+ 	}
+ 
++	if err := validateRetainedSigningCerts(application, time.Now()); err != nil {
++		return false, err
++	}
+ 	for _, providerItem := range application.Providers {
+ 		providerItem.Provider = nil
+ 	}
+@@ -502,6 +510,9 @@ func AddApplication(application *Application, lang string) (bool, error) {
+ 	if application.Organization == "" {
+ 		application.Organization = "built-in"
+ 	}
++	if err := validateRetainedSigningCerts(application, time.Now()); err != nil {
++		return false, err
++	}
+ 	if application.ClientId == "" {
+ 		application.ClientId = util.GenerateClientId()
+ 	}
+diff --git a/object/saml_idp.go b/object/saml_idp.go
+index eb08f88..700ee34 100644
+--- a/object/saml_idp.go
++++ b/object/saml_idp.go
+@@ -1,4 +1,5 @@
+ // Copyright 2022 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -150,6 +151,9 @@ func NewSamlResponse(application *Application, user *User, host string, certific
+ }
+ 
+ func getSamlNameId(application *Application, user *User) (string, string) {
++	if application.UsePersistentSamlNameId {
++		return user.Id, "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"
++	}
+ 	if application.UseEmailAsSamlNameId {
+ 		return user.Email, "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
+ 	}
+diff --git a/object/syncer_scim.go b/object/syncer_scim.go
+index 978dafd..9ee1cb2 100644
+--- a/object/syncer_scim.go
++++ b/object/syncer_scim.go
+@@ -1,4 +1,5 @@
+ // Copyright 2025 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -15,13 +16,11 @@
+ package object
+ 
+ import (
+-	"context"
+ 	"encoding/json"
+ 	"fmt"
+ 	"io"
+ 	"net/http"
+ 	"strings"
+-	"time"
+ 
+ 	"github.com/casdoor/casdoor/util"
+ )
+@@ -156,10 +155,9 @@ func (p *SCIMSyncerProvider) buildSCIMEndpoint() string {
+ 
+ // createSCIMRequest creates an HTTP request with proper authentication
+ func (p *SCIMSyncerProvider) createSCIMRequest(method, url string, body io.Reader) (*http.Request, error) {
+-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+-	defer cancel()
+-
+-	req, err := http.NewRequestWithContext(ctx, method, url, body)
++	// The caller's HTTP client applies its 30-second timeout. A context canceled
++	// on returning from this helper would cancel the request before client.Do.
++	req, err := http.NewRequest(method, url, body)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+diff --git a/object/thesmos_integration_test.go b/object/thesmos_integration_test.go
+new file mode 100644
+index 0000000..e380b3a
+--- /dev/null
++++ b/object/thesmos_integration_test.go
+@@ -0,0 +1,338 @@
++// Copyright 2026 The Thesmos integration contributors.
++// Modified for the Thesmos integration evaluation, 2026-10-06.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//      http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package object
++
++import (
++	"crypto/rand"
++	"crypto/rsa"
++	"crypto/x509"
++	"encoding/json"
++	"encoding/pem"
++	"net/http"
++	"net/http/httptest"
++	"reflect"
++	"testing"
++	"time"
++
++	"github.com/golang-jwt/jwt/v5"
++	"github.com/xorm-io/xorm"
++)
++
++func evaluationSigningFixture(t *testing.T) (map[string]*rsa.PrivateKey, *Application) {
++	t.Helper()
++	engine, err := xorm.NewEngine("sqlite", t.TempDir()+"/signing.sqlite")
++	if err != nil {
++		t.Fatal(err)
++	}
++	engine.SetMaxOpenConns(1)
++	if err := engine.Sync2(&Cert{}, &Token{}); err != nil {
++		t.Fatal(err)
++	}
++	previous := ormer
++	ormer = &Ormer{Engine: engine}
++	t.Cleanup(func() { ormer = previous; engine.Close() })
++	keys := map[string]*rsa.PrivateKey{}
++	for _, name := range []string{"previous", "current", "untrusted"} {
++		key, err := rsa.GenerateKey(rand.Reader, 2048)
++		if err != nil {
++			t.Fatal(err)
++		}
++		public, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
++		if err != nil {
++			t.Fatal(err)
++		}
++		cert := &Cert{Owner: "admin", Name: name, Scope: "JWT", Type: "x509", CryptoAlgorithm: "RS256",
++			Certificate: string(pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: public}))}
++		if _, err := engine.Insert(cert); err != nil {
++			t.Fatal(err)
++		}
++		keys[name] = key
++	}
++	app := &Application{Owner: "admin", Name: "client", Organization: "tenant", Cert: "current", TokenSigningMethod: "RS256"}
++	configuration := map[string]interface{}{"retainedSigningCerts": []map[string]interface{}{{"cert": "admin/previous", "expiresAt": time.Now().Add(time.Hour).Unix()}}}
++	raw, _ := json.Marshal(configuration)
++	if err := json.Unmarshal(raw, app); err != nil {
++		t.Fatal(err)
++	}
++	return keys, app
++}
++
++func evaluationSignedToken(t *testing.T, key *rsa.PrivateKey, kid string, method jwt.SigningMethod) string {
++	t.Helper()
++	token := jwt.NewWithClaims(method, &Claims{User: &User{Name: "reader"}, TokenType: "access-token",
++		RegisteredClaims: jwt.RegisteredClaims{Issuer: "https://issuer.example", Subject: "subject", Audience: []string{"client"},
++			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour))}})
++	if kid != "" {
++		token.Header["kid"] = kid
++	}
++	value, err := token.SignedString(key)
++	if err != nil {
++		t.Fatal(err)
++	}
++	return value
++}
++
++func TestEvaluationRetainedSigningKeyVerifiesOldGrant(t *testing.T) {
++	keys, app := evaluationSigningFixture(t)
++	value := evaluationSignedToken(t, keys["previous"], "previous", jwt.SigningMethodRS256)
++	if _, err := ParseJwtTokenByApplication(value, app); err != nil {
++		t.Fatalf("retained signing key must verify the old grant: %v", err)
++	}
++	if _, err := ParseStandardJwtTokenByApplication(value, app); err != nil {
++		t.Fatalf("standard token must use the same retained trust policy: %v", err)
++	}
++}
++
++func TestEvaluationRetainedSigningKeyBoundaries(t *testing.T) {
++	keys, app := evaluationSigningFixture(t)
++	old := evaluationSignedToken(t, keys["previous"], "previous", jwt.SigningMethodRS256)
++	parsers := map[string]func(string, *Application) error{
++		"custom":   func(v string, a *Application) error { _, e := ParseJwtTokenByApplication(v, a); return e },
++		"standard": func(v string, a *Application) error { _, e := ParseStandardJwtTokenByApplication(v, a); return e },
++	}
++	for format, parse := range parsers {
++		t.Run(format, func(t *testing.T) {
++			for _, tc := range []struct {
++				name, token string
++				policy      []*RetainedSigningCert
++			}{
++				{"not-retained", old, nil},
++				{"expired", old, []*RetainedSigningCert{{Cert: "admin/previous", ExpiresAt: time.Now().Unix()}}},
++				{"retired", old, []*RetainedSigningCert{}},
++				{"wrong-owner", old, []*RetainedSigningCert{{Cert: "other/previous", ExpiresAt: time.Now().Add(time.Hour).Unix()}}},
++				{"missing-cert", old, []*RetainedSigningCert{{Cert: "tenant/previous", ExpiresAt: time.Now().Add(time.Hour).Unix()}}},
++				{"unknown-kid", evaluationSignedToken(t, keys["untrusted"], "untrusted", jwt.SigningMethodRS256), app.RetainedSigningCerts},
++				{"missing-kid", evaluationSignedToken(t, keys["previous"], "", jwt.SigningMethodRS256), app.RetainedSigningCerts},
++				{"forged-signature", evaluationSignedToken(t, keys["untrusted"], "previous", jwt.SigningMethodRS256), app.RetainedSigningCerts},
++				{"wrong-algorithm", evaluationSignedToken(t, keys["previous"], "previous", jwt.SigningMethodRS512), app.RetainedSigningCerts},
++			} {
++				t.Run(tc.name, func(t *testing.T) {
++					a := *app
++					a.RetainedSigningCerts = tc.policy
++					if parse(tc.token, &a) == nil {
++						t.Fatal("unauthorized signing key accepted")
++					}
++				})
++			}
++			current := evaluationSignedToken(t, keys["current"], "current", jwt.SigningMethodRS256)
++			if parse(current, app) != nil {
++				t.Fatal("current key rejected")
++			}
++			if _, err := ormer.Engine.Where("owner = ? AND name = ?", "admin", "previous").Delete(&Cert{}); err != nil {
++				t.Fatal(err)
++			}
++			if parse(old, app) == nil {
++				t.Fatal("deleted retained key accepted")
++			}
++			if parse(current, app) != nil {
++				t.Fatal("deleted retained key disrupted current-key verification")
++			}
++		})
++		// Restore the fixture for the other claims format.
++		if _, err := ormer.Engine.Insert(&Cert{Owner: "admin", Name: "previous", Scope: "JWT", Type: "x509", Certificate: func() string {
++			p, _ := x509.MarshalPKIXPublicKey(&keys["previous"].PublicKey)
++			return string(pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: p}))
++		}()}); err != nil {
++			t.Fatal(err)
++		}
++	}
++}
++
++func TestEvaluationStoredGrantApplicationBinding(t *testing.T) {
++	keys, app := evaluationSigningFixture(t)
++	access := evaluationSignedToken(t, keys["previous"], "previous", jwt.SigningMethodRS256)
++	refreshJWT := jwt.NewWithClaims(jwt.SigningMethodRS256, &Claims{User: &User{Name: "reader"}, TokenType: "refresh-token", RegisteredClaims: jwt.RegisteredClaims{ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour))}})
++	refreshJWT.Header["kid"] = "previous"
++	refresh, err := refreshJWT.SignedString(keys["previous"])
++	if err != nil {
++		t.Fatal(err)
++	}
++	grant := &Token{Owner: app.Owner, Name: "grant", Application: app.Name, Organization: app.Organization, User: "reader", ExpiresIn: 300,
++		AccessTokenHash: getTokenHash(access), RefreshTokenHash: getTokenHash(refresh)}
++	if _, err := ormer.Engine.Insert(grant); err != nil {
++		t.Fatal(err)
++	}
++	for _, hint := range []string{"", "access_token", "refresh_token", "unsupported"} {
++		for _, value := range []string{access, refresh} {
++			got, err := GetApplicationToken(value, hint, app)
++			if err != nil || got == nil {
++				t.Fatalf("hint must not control token admission: %q", hint)
++			}
++		}
++	}
++	for _, field := range []string{"owner", "application", "organization"} {
++		other := *app
++		switch field {
++		case "owner":
++			other.Owner = "other"
++		case "application":
++			other.Name = "other"
++		case "organization":
++			other.Organization = "other"
++		}
++		if got, err := GetApplicationToken(access, "", &other); err != nil || got != nil {
++			t.Fatalf("wrong %s accepted", field)
++		}
++	}
++	grant.ExpiresIn = 0
++	if _, err := ormer.Engine.Where("name = ?", "grant").Cols("expires_in").Update(grant); err != nil {
++		t.Fatal(err)
++	}
++	if got, err := GetApplicationToken(access, "", app); err != nil || got != nil {
++		t.Fatal("revoked stored grant accepted")
++	}
++}
++
++func TestEvaluationRetainedSigningConfiguration(t *testing.T) {
++	_, app := evaluationSigningFixture(t)
++	if err := validateRetainedSigningCerts(app, time.Now()); err != nil {
++		t.Fatal(err)
++	}
++	for _, policy := range [][]*RetainedSigningCert{
++		{nil},
++		{{Cert: "previous", ExpiresAt: time.Now().Add(time.Hour).Unix()}},
++		{{Cert: "other/previous", ExpiresAt: time.Now().Add(time.Hour).Unix()}},
++		{{Cert: "admin/previous", ExpiresAt: 0}},
++		{{Cert: "admin/previous", ExpiresAt: time.Now().Add(25 * time.Hour).Unix()}},
++		{{Cert: "admin/current", ExpiresAt: time.Now().Add(time.Hour).Unix()}},
++		{{Cert: "tenant/previous", ExpiresAt: time.Now().Add(time.Hour).Unix()}},
++		{app.RetainedSigningCerts[0], app.RetainedSigningCerts[0]},
++		{app.RetainedSigningCerts[0], app.RetainedSigningCerts[0], app.RetainedSigningCerts[0]},
++	} {
++		candidate := *app
++		candidate.RetainedSigningCerts = policy
++		if validateRetainedSigningCerts(&candidate, time.Now()) == nil {
++			t.Fatal("invalid retained signing configuration accepted")
++		}
++	}
++}
++
++func TestEvaluationRetainedSigningTrustSurvivesStoreReopen(t *testing.T) {
++	keys, app := evaluationSigningFixture(t)
++	if err := ormer.Engine.Sync2(&Application{}); err != nil {
++		t.Fatal(err)
++	}
++	if _, err := ormer.Engine.Insert(app); err != nil {
++		t.Fatal(err)
++	}
++	driver, dsn := ormer.Engine.DriverName(), ormer.Engine.DataSourceName()
++	if err := ormer.Engine.Close(); err != nil {
++		t.Fatal(err)
++	}
++	reopened, err := xorm.NewEngine(driver, dsn)
++	if err != nil {
++		t.Fatal(err)
++	}
++	t.Cleanup(func() { reopened.Close() })
++	ormer.Engine = reopened
++	var loaded Application
++	exists, err := reopened.Where("owner = ? AND name = ?", app.Owner, app.Name).Get(&loaded)
++	if err != nil || !exists || !reflect.DeepEqual(loaded.RetainedSigningCerts, app.RetainedSigningCerts) {
++		t.Fatal("retained trust did not survive Store reopen")
++	}
++	if _, err := ParseJwtTokenByApplication(evaluationSignedToken(t, keys["previous"], "previous", jwt.SigningMethodRS256), &loaded); err != nil {
++		t.Fatal("reopened retained trust cannot validate old signing key")
++	}
++}
++
++func TestEvaluationSCIMRequestCompletes(t *testing.T) {
++	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
++		if r.Header.Get("Authorization") != "Bearer test-token" || r.URL.Path != "/Users" {
++			t.Error("incorrect request")
++		}
++		w.Header().Set("Content-Type", "application/scim+json")
++		w.Write([]byte(`{"Resources":[],"totalResults":0}`))
++	}))
++	defer server.Close()
++	p := &SCIMSyncerProvider{Syncer: &Syncer{Organization: "built-in", Host: server.URL, Password: "test-token"}}
++	if err := p.TestConnection(); err != nil {
++		t.Fatal(err)
++	}
++	if p.Syncer.getHttpClient().Timeout == 0 {
++		t.Fatal("HTTP timeout missing")
++	}
++}
++
++func TestEvaluationJSONClaimTypes(t *testing.T) {
++	attrs := []*JwtItem{{Name: "namespace", Category: "Static Value", Type: "JSON", Value: `{"roles":["viewer"],"enabled":true}`}, {Name: "bad", Type: "JSON", Value: `not-json`}}
++	result := getClaimsCustom(Claims{User: &User{Name: "reader"}}, nil, attrs)
++	want := map[string]interface{}{"roles": []interface{}{"viewer"}, "enabled": true}
++	if !reflect.DeepEqual(result["namespace"], want) {
++		t.Fatalf("unexpected JSON claim: %#v", result["namespace"])
++	}
++	if _, exists := result["bad"]; exists {
++		t.Fatal("invalid JSON must not become a claim")
++	}
++}
++
++func TestEvaluationProtectedClaims(t *testing.T) {
++	protocol := Claims{User: &User{Name: "reader", Properties: map[string]string{"iss": "override", "aud": "override", "scope": "override"}}, TokenType: "access-token", Scope: "read", RegisteredClaims: jwt.RegisteredClaims{Issuer: "https://issuer.example", Subject: "subject", Audience: []string{"client"}, ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour))}}
++	attrs := []*JwtItem{}
++	for _, name := range []string{"iss", "sub", "aud", "exp", "nbf", "iat", "jti", "tokenType", "azp", "nonce", "scope", "cnf"} {
++		attrs = append(attrs, &JwtItem{Name: name, Type: "String", Value: "override"})
++	}
++	result := getClaimsCustom(protocol, []string{"Properties.iss", "Properties.aud", "Properties.scope"}, attrs)
++	if result["iss"] != protocol.Issuer || result["sub"] != protocol.Subject || !reflect.DeepEqual(result["aud"], protocol.Audience) || result["exp"] != protocol.ExpiresAt || result["tokenType"] != "access-token" || result["scope"] != "read" {
++		t.Fatal("protocol claim overwritten")
++	}
++	if _, ok := result["cnf"]; ok {
++		t.Fatal("confirmation claim injected")
++	}
++}
++
++func TestEvaluationRefreshClaimsExcludeApplicationClaims(t *testing.T) {
++	expiry := time.Now().Add(time.Hour)
++	claims := Claims{User: &User{Name: "reader"}, Scope: "read", TokenType: "access-token", RegisteredClaims: jwt.RegisteredClaims{Issuer: "https://issuer.example", Subject: "subject"}}
++	result := getRefreshClaimsCustom(claims, []string{"Name"}, []*JwtItem{{Name: "roles", Type: "Array", Value: "reader"}}, expiry)
++	if _, ok := result["roles"]; ok {
++		t.Fatal("application role claim in refresh token")
++	}
++	encoded, err := json.Marshal(result)
++	if err != nil {
++		t.Fatal(err)
++	}
++	var parsed Claims
++	if err := json.Unmarshal(encoded, &parsed); err != nil {
++		t.Fatal(err)
++	}
++	if parsed.Scope != "read" || parsed.TokenType != "refresh-token" || parsed.Subject != "subject" || parsed.ExpiresAt.Unix() != expiry.Unix() {
++		t.Fatal("refresh protocol claims lost")
++	}
++}
++
++func TestEvaluationPersistentSAMLNameID(t *testing.T) {
++	app := &Application{UsePersistentSamlNameId: true, UseEmailAsSamlNameId: true}
++	first := &User{Id: "immutable-first", Name: "same-name", Email: "first@example.invalid"}
++	id, format := getSamlNameId(app, first)
++	if id != first.Id || format != "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent" {
++		t.Fatal("persistent subject not used")
++	}
++	first.Name = "renamed"
++	first.Email = "changed@example.invalid"
++	if renamed, _ := getSamlNameId(app, first); renamed != id {
++		t.Fatal("profile change changed persistent subject")
++	}
++	replacement := &User{Id: "immutable-replacement", Name: "same-name"}
++	if value, _ := getSamlNameId(app, replacement); value == id {
++		t.Fatal("recreated account reused subject")
++	}
++	if value, _ := getSamlNameId(app, &User{Name: "fallback"}); value != "" {
++		t.Fatal("missing immutable id fell back to mutable name")
++	}
++	if value, _ := getSamlNameId(&Application{}, &User{Name: "upstream-default"}); value != "upstream-default" {
++		t.Fatal("upstream default changed without opt-in")
++	}
++}
+diff --git a/object/token.go b/object/token.go
+index 606d2f3..ce259b5 100644
+--- a/object/token.go
++++ b/object/token.go
+@@ -1,4 +1,5 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -45,6 +46,7 @@ type Token struct {
+ 	Scope            string `xorm:"varchar(300)" json:"scope"`
+ 	TokenType        string `xorm:"varchar(100)" json:"tokenType"`
+ 	GrantType        string `xorm:"varchar(100)" json:"grantType"`
++	RedirectUri      string `xorm:"varchar(2000)" json:"redirectUri"`
+ 	CodeChallenge    string `xorm:"varchar(100)" json:"codeChallenge"`
+ 	CodeIsUsed       bool   `json:"codeIsUsed"`
+ 	CodeExpireIn     int64  `json:"codeExpireIn"`
+@@ -163,26 +165,20 @@ func GetTokenByIdToken(idToken string) (*Token, error) {
+ }
+ 
+ func GetTokenByTokenValue(tokenValue, tokenTypeHint string) (*Token, error) {
+-	switch tokenTypeHint {
+-	case "access_token", "access-token":
+-		token, err := GetTokenByAccessToken(tokenValue)
+-		if err != nil {
+-			return nil, err
+-		}
+-		if token != nil {
+-			return token, nil
+-		}
+-	case "refresh_token", "refresh-token":
++	// A hint only optimizes lookup; a missing or incorrect hint must not hide
++	// another supported token type (RFC 7662 section 2.1).
++	if tokenTypeHint == "refresh_token" || tokenTypeHint == "refresh-token" {
+ 		token, err := GetTokenByRefreshToken(tokenValue)
+-		if err != nil {
+-			return nil, err
+-		}
+-		if token != nil {
+-			return token, nil
++		if err != nil || token != nil {
++			return token, err
+ 		}
++		return GetTokenByAccessToken(tokenValue)
+ 	}
+-
+-	return nil, nil
++	token, err := GetTokenByAccessToken(tokenValue)
++	if err != nil || token != nil {
++		return token, err
++	}
++	return GetTokenByRefreshToken(tokenValue)
+ }
+ 
+ func updateUsedByCode(token *Token) (bool, error) {
+diff --git a/object/token_jwt.go b/object/token_jwt.go
+index a617993..0372dd7 100644
+--- a/object/token_jwt.go
++++ b/object/token_jwt.go
+@@ -1,4 +1,5 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -15,6 +16,7 @@
+ package object
+ 
+ import (
++	"encoding/json"
+ 	"fmt"
+ 	"reflect"
+ 	"strings"
+@@ -378,7 +380,8 @@ func getUserFieldValue(user *User, fieldName string) (interface{}, bool) {
+ }
+ 
+ func getRefreshClaimsCustom(claims Claims, tokenField []string, tokenAttributes []*JwtItem, refreshExpireTime time.Time) jwt.MapClaims {
+-	res := getClaimsCustom(claims, tokenField, tokenAttributes)
++	// Refresh grants need protocol metadata only; application claims can conflict with User decoding.
++	res := getClaimsCustom(claims, nil, nil)
+ 	res["exp"] = jwt.NewNumericDate(refreshExpireTime)
+ 	// overwrite the "access-token" set by getClaimsCustom(), so that the refresh token
+ 	// can't be used as an access token
+@@ -386,6 +389,15 @@ func getRefreshClaimsCustom(claims Claims, tokenField []string, tokenAttributes
+ 	return res
+ }
+ 
++// Protocol claims must not be replaced by application attributes or user properties.
++func isProtectedCustomClaim(name string) bool {
++	switch name {
++	case "iss", "sub", "aud", "exp", "nbf", "iat", "jti", "tokenType", "azp", "nonce", "scope", "cnf":
++		return true
++	}
++	return false
++}
++
+ func getClaimsCustom(claims Claims, tokenField []string, tokenAttributes []*JwtItem) jwt.MapClaims {
+ 	res := make(jwt.MapClaims)
+ 
+@@ -437,6 +449,9 @@ func getClaimsCustom(claims Claims, tokenField []string, tokenAttributes []*JwtI
+ 				continue
+ 			}
+ 			base, fieldName := parts[0], parts[1]
++			if isProtectedCustomClaim(fieldName) {
++				continue
++			}
+ 			mField := userValue.FieldByName(base)
+ 			if !mField.IsValid() { // Can't find `Properties` field, so skip.
+ 				continue
+@@ -462,6 +477,9 @@ func getClaimsCustom(claims Claims, tokenField []string, tokenAttributes []*JwtI
+ 	}
+ 
+ 	for _, item := range tokenAttributes {
++		if isProtectedCustomClaim(item.Name) {
++			continue
++		}
+ 		var value interface{}
+ 
+ 		// If Category is "Existing Field", get the actual field value from the user
+@@ -478,7 +496,11 @@ func getClaimsCustom(claims Claims, tokenField []string, tokenAttributes []*JwtI
+ 				continue
+ 			}
+ 
+-			if item.Type == "String" {
++			if item.Type == "JSON" {
++				if err := json.Unmarshal([]byte(item.Value), &value); err != nil {
++					continue
++				}
++			} else if item.Type == "String" {
+ 				value = valueList[0]
+ 			} else {
+ 				value = valueList
+@@ -700,6 +722,7 @@ func generateJwtToken(application *Application, user *User, provider string, sig
+ 	if err != nil {
+ 		return "", "", "", "", err
+ 	}
++	refreshToken.Header["kid"] = cert.Name
+ 	refreshTokenString, err = refreshToken.SignedString(key)
+ 	if err != nil {
+ 		return "", "", "", "", err
+@@ -763,7 +786,7 @@ func ParseJwtToken(token string, cert *Cert) (*Claims, error) {
+ }
+ 
+ func ParseJwtTokenByApplication(token string, application *Application) (*Claims, error) {
+-	cert, err := getCertByApplication(application)
++	cert, err := getTokenVerificationCert(token, application)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+diff --git a/object/token_oauth.go b/object/token_oauth.go
+index bffe20d..1d0b97a 100644
+--- a/object/token_oauth.go
++++ b/object/token_oauth.go
+@@ -1,4 +1,5 @@
+ // Copyright 2024 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -23,7 +24,7 @@ import (
+ 	"github.com/casdoor/casdoor/util"
+ )
+ 
+-func GetOAuthToken(grantType string, clientId string, clientSecret string, code string, verifier string, scope string, nonce string, username string, password string, host string, refreshToken string, tag string, avatar string, lang string, subjectToken string, subjectTokenType string, assertion string, clientAssertion string, clientAssertionType string, audience string, resource string, dpopProof string, clientIp string) (interface{}, error) {
++func GetOAuthToken(grantType string, clientId string, clientSecret string, code string, verifier string, scope string, nonce string, username string, password string, host string, refreshToken string, tag string, avatar string, lang string, subjectToken string, subjectTokenType string, assertion string, clientAssertion string, clientAssertionType string, audience string, resource string, dpopProof string, clientIp string, redirectUri string) (interface{}, error) {
+ 	var (
+ 		application *Application
+ 		err         error
+@@ -83,7 +84,7 @@ func GetOAuthToken(grantType string, clientId string, clientSecret string, code
+ 	var tokenError *TokenError
+ 	switch grantType {
+ 	case "authorization_code": // Authorization Code Grant
+-		token, tokenError, err = GetAuthorizationCodeToken(application, clientSecret, code, verifier, resource, lang)
++		token, tokenError, err = GetAuthorizationCodeToken(application, clientSecret, code, verifier, resource, lang, redirectUri)
+ 	case "password": // Resource Owner Password Credentials Grant
+ 		token, tokenError, err = GetPasswordToken(application, username, password, scope, host, clientIp, lang)
+ 	case "client_credentials": // Client Credentials Grant
+@@ -151,7 +152,7 @@ func GetOAuthToken(grantType string, clientId string, clientSecret string, code
+ }
+ 
+ // GetAuthorizationCodeToken handles the Authorization Code Grant flow.
+-func GetAuthorizationCodeToken(application *Application, clientSecret string, code string, verifier string, resource string, lang string) (*Token, *TokenError, error) {
++func GetAuthorizationCodeToken(application *Application, clientSecret string, code string, verifier string, resource string, lang string, redirectUri string) (*Token, *TokenError, error) {
+ 	if code == "" {
+ 		return nil, &TokenError{
+ 			Error:            InvalidRequest,
+@@ -194,6 +195,10 @@ func GetAuthorizationCodeToken(application *Application, clientSecret string, co
+ 		}, nil
+ 	}
+ 
++	if token.RedirectUri == "" || token.RedirectUri != redirectUri {
++		return nil, &TokenError{Error: InvalidGrant, ErrorDescription: "redirect_uri does not match the authorization request"}, nil
++	}
++
+ 	if token.CodeIsUsed {
+ 		// anti replay attacks
+ 		return nil, &TokenError{
+diff --git a/object/token_oauth_util.go b/object/token_oauth_util.go
+index 3ec8874..7e35129 100644
+--- a/object/token_oauth_util.go
++++ b/object/token_oauth_util.go
+@@ -1,4 +1,5 @@
+ // Copyright 2024 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -401,6 +402,7 @@ func GetOAuthCode(userId string, clientId string, provider string, signinMethod
+ 		Scope:         scope,
+ 		TokenType:     "Bearer",
+ 		CodeChallenge: challenge,
++		RedirectUri:   redirectUri,
+ 		CodeIsUsed:    false,
+ 		CodeExpireIn:  time.Now().Add(time.Minute * 5).Unix(),
+ 		Resource:      resource,
+@@ -465,7 +467,7 @@ func RefreshToken(application *Application, grantType string, refreshToken strin
+ 	// authorization_code exchange checks it. Without this a client may present a
+ 	// refresh token issued to a different application and, together with the
+ 	// audience restore below, mint a token carrying another grant's resource.
+-	if application.Name != token.Application {
++	if !tokenBelongsToApplication(token, application) {
+ 		return &TokenError{
+ 			Error:            InvalidGrant,
+ 			ErrorDescription: fmt.Sprintf("the token is for wrong application (client_id), application.Name: [%s], token.Application: [%s]", application.Name, token.Application),
+@@ -487,14 +489,11 @@ func RefreshToken(application *Application, grantType string, refreshToken strin
+ 		return tokenError, nil
+ 	}
+ 
+-	cert, err := getCertByApplication(application)
++	cert, err := getTokenVerificationCert(refreshToken, application)
+ 	if err != nil {
+-		return nil, err
+-	}
+-	if cert == nil {
+ 		return &TokenError{
+ 			Error:            InvalidGrant,
+-			ErrorDescription: fmt.Sprintf("cert: %s cannot be found", application.Cert),
++			ErrorDescription: "refresh token signing key is unavailable or not authorized",
+ 		}, nil
+ 	}
+ 
+diff --git a/object/token_signing_trust.go b/object/token_signing_trust.go
+new file mode 100644
+index 0000000..8cbddf9
+--- /dev/null
++++ b/object/token_signing_trust.go
+@@ -0,0 +1,146 @@
++// Copyright 2026 The Thesmos integration contributors.
++// Modified for the Thesmos integration evaluation, 2026-10-06.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//      http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package object
++
++import (
++	"errors"
++	"strings"
++	"time"
++
++	"github.com/golang-jwt/jwt/v5"
++)
++
++const maxRetainedSigningCerts = 2
++const maxRetainedSigningLifetime = 24 * time.Hour
++
++// RetainedSigningCert authorizes verification, never issuance, for one exact
++// certificate until an absolute Unix-second deadline. Only global operators
++// can change this policy through the application API.
++type RetainedSigningCert struct {
++	Cert      string `json:"cert"`
++	ExpiresAt int64  `json:"expiresAt"`
++}
++
++func retainedSigningCertIdentity(entry *RetainedSigningCert, application *Application) (string, string, error) {
++	if entry == nil {
++		return "", "", errors.New("retained signing certificate entry is missing")
++	}
++	parts := strings.Split(entry.Cert, "/")
++	if len(parts) != 2 || parts[0] == "" || parts[1] == "" || len(parts[0]) > 100 || len(parts[1]) > 100 ||
++		(parts[0] != application.Owner && parts[0] != application.Organization) {
++		return "", "", errors.New("retained signing certificate requires an explicit authorized owner/name")
++	}
++	return parts[0], parts[1], nil
++}
++
++func validateRetainedSigningCerts(application *Application, now time.Time) error {
++	if len(application.RetainedSigningCerts) > maxRetainedSigningCerts {
++		return errors.New("at most two retained signing certificates are allowed")
++	}
++	if len(application.RetainedSigningCerts) == 0 {
++		return nil
++	}
++	current, err := getCertByApplication(application)
++	if err != nil || current == nil || current.Scope != "JWT" || current.Certificate == "" {
++		return errors.New("current signing certificate is unavailable")
++	}
++	seen := map[string]bool{current.Name: true}
++	for _, entry := range application.RetainedSigningCerts {
++		owner, name, err := retainedSigningCertIdentity(entry, application)
++		if err != nil {
++			return err
++		}
++		if entry.ExpiresAt <= 0 || entry.ExpiresAt > now.Add(maxRetainedSigningLifetime).Unix() {
++			return errors.New("retained signing certificate deadline must be positive and within 24 hours")
++		}
++		if seen[name] {
++			return errors.New("signing certificate key IDs must be distinct")
++		}
++		seen[name] = true
++		cert, err := getCert(owner, name) // Exact identity; no global-name fallback.
++		if err != nil || cert == nil || cert.Scope != "JWT" || cert.Certificate == "" {
++			return errors.New("retained JWT signing certificate is unavailable")
++		}
++	}
++	return nil
++}
++
++func getTokenVerificationCert(tokenValue string, application *Application) (*Cert, error) {
++	current, err := getCertByApplication(application)
++	if err != nil || current == nil || current.Certificate == "" {
++		return nil, errors.New("current signing certificate is unavailable")
++	}
++	// Preserve the default single-key policy, including existing keyless refresh
++	// tokens. Opt-in overlap requires a kid; newly issued refresh tokens carry it.
++	if len(application.RetainedSigningCerts) == 0 {
++		return current, nil
++	}
++	if len(application.RetainedSigningCerts) > maxRetainedSigningCerts {
++		return nil, errors.New("invalid retained signing certificate policy")
++	}
++	unverified, _, err := jwt.NewParser().ParseUnverified(tokenValue, jwt.MapClaims{})
++	if err != nil {
++		return nil, errors.New("invalid JWT header")
++	}
++	kid, ok := unverified.Header["kid"].(string)
++	algorithm := application.TokenSigningMethod
++	if algorithm == "" {
++		algorithm = "RS256"
++	}
++	if !ok || kid == "" || len(kid) > 100 || unverified.Method.Alg() != algorithm {
++		return nil, errors.New("JWT key ID or signing algorithm is not authorized")
++	}
++	if kid == current.Name {
++		return current, nil
++	}
++	now := time.Now()
++	for _, entry := range application.RetainedSigningCerts {
++		owner, name, err := retainedSigningCertIdentity(entry, application)
++		if err != nil {
++			return nil, err
++		}
++		if name != kid {
++			continue
++		}
++		if entry.ExpiresAt <= now.Unix() || entry.ExpiresAt > now.Add(maxRetainedSigningLifetime).Unix() {
++			return nil, errors.New("retained signing certificate is expired or invalid")
++		}
++		cert, err := getCert(owner, name) // Lookup is driven by trusted configuration.
++		if err != nil || cert == nil || cert.Scope != "JWT" || cert.Certificate == "" {
++			return nil, errors.New("retained JWT signing certificate is unavailable")
++		}
++		return cert, nil
++	}
++	return nil, errors.New("JWT signing key is not authorized for this application")
++}
++
++func tokenBelongsToApplication(token *Token, application *Application) bool {
++	return token != nil && application != nil && token.Owner == application.Owner &&
++		token.Application == application.Name && token.Organization == application.Organization
++}
++
++// GetApplicationToken binds introspection to the authenticated application
++// before any untrusted JWT header participates in key selection.
++func GetApplicationToken(tokenValue, hint string, application *Application) (*Token, error) {
++	token, err := GetTokenByTokenValue(tokenValue, hint)
++	if err != nil {
++		return nil, err
++	}
++	if token == nil || token.ExpiresIn <= 0 || !tokenBelongsToApplication(token, application) {
++		return nil, nil
++	}
++	return token, nil
++}
+diff --git a/object/token_standard_jwt.go b/object/token_standard_jwt.go
+index 6b20f12..fa2879d 100644
+--- a/object/token_standard_jwt.go
++++ b/object/token_standard_jwt.go
+@@ -1,4 +1,5 @@
+ // Copyright 2024 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -128,7 +129,7 @@ func ParseStandardJwtToken(token string, cert *Cert) (*ClaimsStandard, error) {
+ }
+ 
+ func ParseStandardJwtTokenByApplication(token string, application *Application) (*ClaimsStandard, error) {
+-	cert, err := getCertByApplication(application)
++	cert, err := getTokenVerificationCert(token, application)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+diff --git a/scim/group_handler.go b/scim/group_handler.go
+index 9081d00..b06eb0a 100644
+--- a/scim/group_handler.go
++++ b/scim/group_handler.go
+@@ -1,4 +1,5 @@
+ // Copyright 2026 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -24,6 +25,7 @@ import (
+ 	"github.com/casdoor/casdoor/util"
+ 	"github.com/elimity-com/scim"
+ 	"github.com/elimity-com/scim/errors"
++	"github.com/elimity-com/scim/optional"
+ )
+ 
+ const GroupExtensionKey = "urn:ietf:params:scim:schemas:extension:enterprise:2.0:Group"
+@@ -69,16 +71,23 @@ func (h GroupResourceHandler) GetAll(r *http.Request, params scim.ListRequestPar
+ 		return scim.Page{}, err
+ 	}
+ 
++	column, value, err := listFilter(params.Filter, "urn:ietf:params:scim:schemas:core:2.0:Group", map[string]string{"displayname": "LOWER(display_name)"})
++	if err != nil {
++		return scim.Page{}, err
++	}
++	countSession := listSession(organization, column, value)
++	defer countSession.Close()
++	totalCount, err := countSession.Count(&object.Group{})
++	if err != nil {
++		return scim.Page{}, err
++	}
+ 	if params.Count == 0 {
+-		count, err := object.GetGroupCount(organization, "", "")
+-		if err != nil {
+-			return scim.Page{}, err
+-		}
+-		return scim.Page{TotalResults: int(count)}, nil
++		return scim.Page{TotalResults: int(totalCount)}, nil
+ 	}
+-
+-	// startIndex is 1-based
+-	groups, err := object.GetPaginationGroups(organization, params.StartIndex-1, params.Count, "", "", "", "")
++	groups := []*object.Group{}
++	session := listSession(organization, column, value)
++	defer session.Close()
++	err = session.Limit(params.Count, params.StartIndex-1).Find(&groups)
+ 	if err != nil {
+ 		return scim.Page{}, err
+ 	}
+@@ -94,11 +103,6 @@ func (h GroupResourceHandler) GetAll(r *http.Request, params scim.ListRequestPar
+ 		}
+ 	}
+ 
+-	totalCount, err := object.GetGroupCount(organization, "", "")
+-	if err != nil {
+-		return scim.Page{}, err
+-	}
+-
+ 	return scim.Page{
+ 		TotalResults: int(totalCount),
+ 		Resources:    resources,
+@@ -205,6 +209,11 @@ func updateScimGroup(req *http.Request, id string, oldGroup *object.Group, r *sc
+ 	if err != nil {
+ 		return err
+ 	}
++	for key, value := range oldGroup.Properties {
++		if key != "scimExternalId" {
++			newGroup.Properties[key] = value
++		}
++	}
+ 	newGroup.Owner = oldGroup.Owner
+ 	newGroup.Name = oldGroup.Name
+ 	newGroup.UpdatedTime = util.GetCurrentTime()
+@@ -254,6 +263,11 @@ func updateScimGroupByPatch(req *http.Request, id string, group *object.Group, o
+ 		switch op.Path.String() {
+ 		case "displayName":
+ 			group.DisplayName = ToString(value, "")
++		case "externalId":
++			if group.Properties == nil {
++				group.Properties = map[string]string{}
++			}
++			group.Properties["scimExternalId"] = ToString(value, "")
+ 		case "members":
+ 			if op.Op == scim.PatchOperationRemove {
+ 				// Remove specific members matched by filter, or all if no filter
+@@ -334,7 +348,12 @@ func group2resource(group *object.Group, users []*object.User) *scim.Resource {
+ 		updatedTime = createdTime
+ 	}
+ 
++	externalID := optional.String{}
++	if value := group.Properties["scimExternalId"]; value != "" {
++		externalID = optional.NewString(value)
++	}
+ 	return &scim.Resource{
++		ExternalID: externalID,
+ 		ID:         group.GetId(),
+ 		Attributes: attrs,
+ 		Meta: scim.Meta{
+@@ -360,6 +379,7 @@ func resource2group(attrs scim.ResourceAttributes) (*object.Group, error) {
+ 		Owner:       org,
+ 		Name:        name,
+ 		DisplayName: displayName,
++		Properties:  map[string]string{"scimExternalId": getAttrString(attrs, "externalId")},
+ 	}, nil
+ }
+ 
+diff --git a/scim/list_filter.go b/scim/list_filter.go
+new file mode 100644
+index 0000000..7007905
+--- /dev/null
++++ b/scim/list_filter.go
+@@ -0,0 +1,57 @@
++// Copyright 2026 The Thesmos integration contributors.
++// Modified for the Thesmos integration evaluation, 2026-10-05.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//      http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package scim
++
++import (
++	"strings"
++
++	"github.com/casdoor/casdoor/object"
++	"github.com/elimity-com/scim/errors"
++	"github.com/scim2/filter-parser/v2"
++	"github.com/xorm-io/xorm"
++)
++
++// Only supported equality expressions reach SQL; unsupported filters fail closed.
++func listFilter(exp filter.Expression, schemaURI string, columns map[string]string) (string, string, error) {
++	if exp == nil {
++		return "", "", nil
++	}
++	attr, ok := exp.(*filter.AttributeExpression)
++	if !ok || attr.Operator != filter.EQ || attr.AttributePath.SubAttribute != nil {
++		return "", "", errors.ScimErrorInvalidFilter
++	}
++	uri := attr.AttributePath.URI()
++	if uri != "" && !strings.EqualFold(uri, schemaURI) {
++		return "", "", errors.ScimErrorInvalidFilter
++	}
++	column, ok := columns[strings.ToLower(attr.AttributePath.AttributeName)]
++	value, isString := attr.CompareValue.(string)
++	if !ok || !isString {
++		return "", "", errors.ScimErrorInvalidFilter
++	}
++	if strings.HasPrefix(column, "LOWER(") {
++		value = strings.ToLower(value)
++	}
++	return column, value, nil
++}
++
++func listSession(organization, column, value string) *xorm.Session {
++	session := object.GetSession(organization, -1, -1, "", "", "name", "ascend").Asc("owner")
++	if column != "" {
++		session = session.And(column+" = ?", value)
++	}
++	return session
++}
+diff --git a/scim/server.go b/scim/server.go
+index b234567..117c334 100644
+--- a/scim/server.go
++++ b/scim/server.go
+@@ -1,4 +1,5 @@
+ // Copyright 2023 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -111,7 +112,9 @@ var (
+ func GetScimServer() scim.Server {
+ 	config := scim.ServiceProviderConfig{
+ 		// DocumentationURI: optional.NewString("www.example.com/scim"),
+-		SupportPatch: true,
++		SupportPatch:     true,
++		SupportFiltering: true,
++		MaxResults:       100,
+ 	}
+ 
+ 	userAttrs := make([]schema.CoreAttribute, 0, len(UserStringField)+len(UserComplexField))
+@@ -122,6 +125,8 @@ func GetScimServer() scim.Server {
+ 		userAttrs = append(userAttrs, schema.ComplexCoreAttribute(field))
+ 	}
+ 
++	userAttrs = append(userAttrs, schema.SimpleCoreAttribute(schema.SimpleBooleanParams(schema.BooleanParams{Name: "active"})))
++
+ 	userSchema := schema.Schema{
+ 		ID:          schema.UserSchema,
+ 		Name:        optional.NewString("User"),
+diff --git a/scim/thesmos_integration_test.go b/scim/thesmos_integration_test.go
+new file mode 100644
+index 0000000..0a4b64b
+--- /dev/null
++++ b/scim/thesmos_integration_test.go
+@@ -0,0 +1,87 @@
++// Copyright 2026 The Thesmos integration contributors.
++// Modified for the Thesmos integration evaluation, 2026-10-05.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//      http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package scim
++
++import (
++	"github.com/casdoor/casdoor/object"
++	"github.com/casdoor/casdoor/util"
++	"github.com/elimity-com/scim"
++	"github.com/scim2/filter-parser/v2"
++	"testing"
++)
++
++func TestEvaluationActiveMapping(t *testing.T) {
++	for _, active := range []bool{true, false} {
++		user, err := resource2user(scim.ResourceAttributes{"userName": "reader", "active": active, UserExtensionKey: map[string]interface{}{"organization": "evaluation"}})
++		if err != nil || user.IsForbidden == active {
++			t.Fatalf("active mapping failed: %v", err)
++		}
++		if user2resource(user).Attributes["active"] != active {
++			t.Fatal("active did not round trip")
++		}
++	}
++	for _, value := range []interface{}{nil, "false", 0} {
++		if _, err := resource2user(scim.ResourceAttributes{"active": value}); err == nil {
++			t.Fatal("nonboolean active accepted")
++		}
++	}
++	if user2resource(&object.User{IsDeleted: true}).Attributes["active"] != false {
++		t.Fatal("deleted user active")
++	}
++}
++
++func TestEvaluationSCIMFilter(t *testing.T) {
++	for _, tc := range []struct {
++		input     string
++		supported bool
++	}{
++		{`userName eq "reader"`, true},
++		{`USERNAME eq "READER"`, true},
++		{`userName eq "x' OR 1=1 --"`, true},
++		{`userName co "reader"`, false},
++		{`userName eq "reader" or userName eq "admin"`, false},
++		{`active eq false`, false},
++		{`urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:userName eq "reader"`, false},
++	} {
++		exp, err := filter.ParseFilter([]byte(tc.input))
++		if err != nil {
++			t.Fatal(err)
++		}
++		column, value, err := listFilter(exp, "urn:ietf:params:scim:schemas:core:2.0:User", map[string]string{"username": "LOWER(name)"})
++		if (err == nil) != tc.supported {
++			t.Fatalf("unexpected filter support for %s: %v", tc.input, err)
++		}
++		if tc.supported && (column != "LOWER(name)" || value == "") {
++			t.Fatal("incorrect filter translation")
++		}
++	}
++}
++
++func TestEvaluationSCIMGroupExternalID(t *testing.T) {
++	group, err := resource2group(scim.ResourceAttributes{"displayName": "bridge-group", "externalId": "bridge-ownership", GroupExtensionKey: map[string]interface{}{"organization": "evaluation"}})
++	if err != nil {
++		t.Fatal(err)
++	}
++	group.CreatedTime = util.GetCurrentTime()
++	resource := group2resource(group, nil)
++	if resource.ExternalID.Value() != "bridge-ownership" {
++		t.Fatal("group ownership identity did not round trip")
++	}
++	group.Properties = nil
++	if group2resource(group, nil).ExternalID.Present() {
++		t.Fatal("absent externalId was advertised")
++	}
++}
+diff --git a/scim/user_handler.go b/scim/user_handler.go
+index 830f7af..da774c7 100644
+--- a/scim/user_handler.go
++++ b/scim/user_handler.go
+@@ -1,4 +1,5 @@
+ // Copyright 2023 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -58,35 +59,33 @@ func (h UserResourceHandler) GetAll(r *http.Request, params scim.ListRequestPara
+ 		return scim.Page{}, err
+ 	}
+ 
++	column, value, err := listFilter(params.Filter, "urn:ietf:params:scim:schemas:core:2.0:User", map[string]string{"username": "LOWER(name)", "externalid": "external_id"})
++	if err != nil {
++		return scim.Page{}, err
++	}
++	countSession := listSession(organization, column, value)
++	defer countSession.Close()
++	count, err := countSession.Count(&object.User{})
++	if err != nil {
++		return scim.Page{}, err
++	}
+ 	if params.Count == 0 {
+-		var count int64
+-		if organization == "" {
+-			count, err = object.GetGlobalUserCount("", "")
+-		} else {
+-			count, err = object.GetUserCount(organization, "", "", "")
+-		}
+-		if err != nil {
+-			return scim.Page{}, err
+-		}
+ 		return scim.Page{TotalResults: int(count)}, nil
+ 	}
+-
+ 	resources := make([]scim.Resource, 0)
+-	// startIndex is 1-based index
+-	var users []*object.User
+-	if organization == "" {
+-		users, err = object.GetPaginationGlobalUsers(params.StartIndex-1, params.Count, "", "", "", "")
+-	} else {
+-		users, err = object.GetPaginationUsers(organization, params.StartIndex-1, params.Count, "", "", "", "", "")
+-	}
++	users := []*object.User{}
++	session := listSession(organization, column, value)
++	defer session.Close()
++	err = session.Limit(params.Count, params.StartIndex-1).Find(&users)
+ 	if err != nil {
+ 		return scim.Page{}, err
+ 	}
++
+ 	for _, user := range users {
+ 		resources = append(resources, *user2resource(user))
+ 	}
+ 	return scim.Page{
+-		TotalResults: len(resources),
++		TotalResults: int(count),
+ 		Resources:    resources,
+ 	}, nil
+ }
+@@ -197,6 +196,12 @@ func UpdateScimUserByPatchOperation(req *http.Request, id string, ops []scim.Pat
+ 		}
+ 		// PatchOperationAdd and PatchOperationReplace is same in Casdoor, just replace the value
+ 		switch op.Path.String() {
++		case "active":
++			active, ok := value.(bool)
++			if !ok {
++				return scim.Resource{}, errors.ScimErrorInvalidValue
++			}
++			user.IsForbidden = !active
+ 		case "userName":
+ 			user.Name = ToString(value, "")
+ 		case "password":
+diff --git a/scim/util.go b/scim/util.go
+index 12b4d62..29f4e3e 100644
+--- a/scim/util.go
++++ b/scim/util.go
+@@ -1,4 +1,5 @@
+ // Copyright 2023 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -21,6 +22,7 @@ import (
+ 	"github.com/casdoor/casdoor/object"
+ 	"github.com/casdoor/casdoor/util"
+ 	"github.com/elimity-com/scim"
++	"github.com/elimity-com/scim/errors"
+ 	"github.com/elimity-com/scim/optional"
+ 	"github.com/elimity-com/scim/schema"
+ )
+@@ -231,6 +233,14 @@ func resource2user(attrs scim.ResourceAttributes) (user *object.User, err error)
+ 		UpdatedTime: util.GetCurrentTime(),
+ 	}
+ 
++	if value, exists := attrs["active"]; exists {
++		active, ok := value.(bool)
++		if !ok {
++			return nil, errors.ScimErrorInvalidValue
++		}
++		user.IsForbidden = !active
++	}
++
+ 	if user.Owner == "" {
+ 		err = fmt.Errorf("organization in %s is required", UserExtensionKey)
+ 	}
+diff --git a/service/oauth.go b/service/oauth.go
+index 4d5d2b5..57ef850 100644
+--- a/service/oauth.go
++++ b/service/oauth.go
+@@ -1,4 +1,5 @@
+ // Copyright 2023 The casbin Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -93,7 +94,7 @@ func handleAuthCallback(w http.ResponseWriter, r *http.Request) {
+ 	//	return
+ 	//}
+ 
+-	token, tokenError, err := object.GetAuthorizationCodeToken(application, application.ClientSecret, code, "", "", conf.GetAcceptLanguage(r.Header.Get("Accept-Language")))
++	token, tokenError, err := object.GetAuthorizationCodeToken(application, application.ClientSecret, code, "", "", conf.GetAcceptLanguage(r.Header.Get("Accept-Language")), fmt.Sprintf("%s://%s/caswaf-handler", getScheme(r), r.Host))
+ 	if tokenError != nil {
+ 		responseError(w, "CasWAF error: casdoorClient.GetOAuthToken() error: %s", tokenError.Error)
+ 		return

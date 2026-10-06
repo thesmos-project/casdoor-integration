@@ -2,6 +2,32 @@
   "repository": "https://github.com/casdoor/casdoor.git",
   "tag": "v4.15.0",
   "commit": "2301694036cbdcf932b3b1cbef02fb61d9820429",
-  "status": "evaluation-reference-only",
-  "released_patch_series": null
+  "status": "source-candidate-not-production-approved",
+  "patches": [
+    {
+      "path": "patches/casdoor-integration.patch",
+      "sha256": "ac2a64ec604c02fd6a39eb1348d195886329171bd7f7b2704ffec42bb48a6044",
+      "purpose": "SCIM behavior, typed JWT claims, persistent SAML NameIDs, OAuth redirect binding and retained signing-key support."
+    },
+    {
+      "path": "patches/casdoor-security-candidate.patch",
+      "sha256": "0f1e487dc18ef63cded6e09f7b47c9cb70b5043e4128ed23db07367a65b78832",
+      "purpose": "Go dependency updates, maintained ACME implementation and SAML regression coverage."
+    },
+    {
+      "path": "patches/casdoor-frontend-candidate.patch",
+      "sha256": "32763b324c47fbfbe862ecf2aa7ce4dc3765c5748f46583f956da0b86851b837",
+      "purpose": "Frontend runtime dependency updates, including SheetJS from its official distribution."
+    },
+    {
+      "path": "patches/casdoor-build-chain-candidate.patch",
+      "sha256": "15f16374b94f35374a8ded051a9d7a60c857de01cbdf9301f1fa8471ffd5e41f",
+      "purpose": "Frontend build dependency updates."
+    },
+    {
+      "path": "patches/casdoor-claim-configuration-candidate.patch",
+      "sha256": "ebaaec511b8f6d68db1ffb507078a00fbf06f1bf604b17d7b26a3ddab7cadcaa",
+      "purpose": "Validate claim configuration and restrict partial application writes."
+    }
+  ]
 }

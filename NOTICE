@@ -6,6 +6,15 @@ Original project: https://github.com/casdoor/casdoor
 Casdoor is licensed under Apache License 2.0.
 
 This repository is an independently maintained integration project. It does not
-claim authorship of Casdoor or imply endorsement by its developers. No Casdoor
-source or binary is included in this initial scaffold. Future distributions must
-preserve applicable upstream and third-party licence and attribution notices.
+claim authorship of Casdoor or imply endorsement by its developers. Casdoor modifications are
+distributed as an ordered patch series, with the exact upstream revision and
+checksums in upstream.lock.json. Prepared source records every modified path in
+integration-provenance.json. Go dependency manifests, the frontend package
+manifest and Yarn lockfile contain integration dependency updates. The example
+server configuration is derived from upstream and marked as modified.
+
+The ACME integration uses go-acme/lego (MIT); its licence is in licenses/Lego-MIT.txt.
+The frontend uses SheetJS Community Edition (Apache-2.0); its licence is in
+licenses/SheetJS-Apache-2.0.txt. These notices are not a complete dependency or
+bundled-asset licence inventory. Registry publication remains blocked until that
+inventory and production acceptance are complete.

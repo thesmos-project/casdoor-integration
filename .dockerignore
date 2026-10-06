@@ -1,0 +1,16 @@
+**
+!Dockerfile
+!LICENSE
+!NOTICE
+!licenses/
+!licenses/**
+!docker/
+!docker/entrypoint.sh
+!.local/
+!.local/source/
+!.local/source/**
+.local/source/.git
+.local/source/web/node_modules
+.local/source/web/build
+.local/source/web/build-temp
+.local/source/web/build-old

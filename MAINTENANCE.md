@@ -41,8 +41,8 @@ If the registry supports federation, short-lived credentials are preferable.
 Never copy credentials into build arguments, Dockerfiles, generated images or
 public build logs. Pull-request builds must not receive publishing credentials.
 
-The initial publishing workflow should require a manual dispatch through a
-protected GitHub environment named `release`. Registry credentials do not by
+The publishing workflow requires manual dispatch and uses the GitHub environment
+named `release`, which must require maintainer review and be restricted to `main`. Registry credentials do not by
 themselves approve a release. Publish only an accepted source revision and retain
 its digest, SBOM, provenance and release notes. The immutable digest is the
 supported deployment reference; a mutable tag is only a convenience.

@@ -1,0 +1,32 @@
+name: casdoor-integration-evaluation
+services:
+  casdoor:
+    image: ${CASDOOR_IMAGE:-casdoor-integration:candidate}
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 256
+    mem_limit: 384m
+    cpus: "1.0"
+    environment:
+      GOMEMLIMIT: 256MiB
+      GOMAXPROCS: "1"
+      logConfig: '{"adapter":"console","level":4}'
+      initDataNewOnly: "true"
+    ports:
+      - "127.0.0.1:${CASDOOR_PORT:-19080}:8000"
+    volumes:
+      - type: bind
+        source: ../.local/deployment
+        target: /conf
+        read_only: true
+        bind:
+          create_host_path: false
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,mode=1777
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"

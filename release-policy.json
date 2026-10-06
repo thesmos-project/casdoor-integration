@@ -1,0 +1,13 @@
+{
+  "production_ready": false,
+  "registry_publication_approved": false,
+  "required_acceptance": {
+    "security_review": false,
+    "dependency_and_asset_licensing": false,
+    "bootstrap_mfa_and_recovery": false,
+    "protocol_and_upgrade_acceptance": false,
+    "deployment_and_capacity_acceptance": false,
+    "independent_review": false
+  },
+  "note": "Source candidate only. Publishing remains blocked until every acceptance gate is recorded as passed."
+}

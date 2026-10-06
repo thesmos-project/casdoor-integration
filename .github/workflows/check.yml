@@ -1,0 +1,48 @@
+name: Check candidate
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Validate pinned build inputs
+        run: python3 scripts/validate-project.py
+      - name: Prepare source
+        run: python3 scripts/prepare-source.py
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - name: Build and run regression tests
+        run: python3 scripts/build-image.py
+      - name: Verify missing configuration is refused
+        run: |
+          set +e
+          docker run --rm casdoor-integration:candidate > .local/missing-config.log 2>&1
+          result=$?
+          set -e
+          if [ "$result" -ne 1 ]; then
+            echo 'Image unexpectedly started without mounted configuration.' >&2
+            exit 1
+          fi
+          grep -F 'Mount a readable Casdoor configuration' .local/missing-config.log
+      - name: Record candidate image identity
+        run: docker image inspect casdoor-integration:candidate --format '{{json .}}' > .local/image-inspection.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: candidate-build-provenance
+          path: |
+            .local/source/integration-provenance.json
+            .local/build-metadata.json
+            .local/image-inspection.json
+          include-hidden-files: true
+          retention-days: 14

@@ -1,0 +1,384 @@
+diff --git a/object/application.go b/object/application.go
+index 09d195a..1cb83db 100644
+--- a/object/application.go
++++ b/object/application.go
+@@ -451,6 +451,20 @@ func UpdateApplication(id string, application *Application, isGlobalAdmin bool,
+ 		application.Name = name
+ 	}
+ 
++	if err := validateUpdatedCustomClaimConfiguration(application, oldApplication, columns); err != nil {
++		return false, err
++	}
++
++	if len(columns) > 0 {
++		updateName := false
++		for _, column := range columns {
++			updateName = updateName || column == "name"
++		}
++		if !updateName {
++			application.Name = name
++		}
++	}
++
+ 	if name != application.Name {
+ 		err = applicationChangeTrigger(name, application.Name)
+ 		if err != nil {
+@@ -490,7 +504,7 @@ func UpdateApplication(id string, application *Application, isGlobalAdmin bool,
+ 
+ 	session := ormer.Engine.ID(core.PK{owner, name}).Where("organization = ?", oldApplication.Organization)
+ 	if len(columns) > 0 {
+-		session = session.MustCols(columns...)
++		session = session.Cols(columns...).MustCols(columns...)
+ 	} else {
+ 		session = session.AllCols()
+ 	}
+@@ -536,6 +550,10 @@ func AddApplication(application *Application, lang string) (bool, error) {
+ 		application.TokenFields = tokenFields
+ 	}
+ 
++	if err := validateCustomClaimConfiguration(application); err != nil {
++		return false, err
++	}
++
+ 	app, err := GetApplicationByClientId(application.ClientId)
+ 	if err != nil {
+ 		return false, err
+diff --git a/object/thesmos_claim_configuration.go b/object/thesmos_claim_configuration.go
+new file mode 100644
+index 0000000..044fba9
+--- /dev/null
++++ b/object/thesmos_claim_configuration.go
+@@ -0,0 +1,122 @@
++// Copyright 2026 The Thesmos integration contributors.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//      http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package object
++
++import (
++	"encoding/json"
++	"fmt"
++	"reflect"
++	"strings"
++	"unicode"
++	"unicode/utf8"
++
++	"github.com/casdoor/casdoor/util"
++)
++
++// Validate the configuration before persistence. Issuance also retains its
++// protocol-claim guards, including for configurations imported outside this API.
++func validateCustomClaimConfiguration(application *Application) error {
++	if len(application.TokenFields) > 64 || len(application.TokenAttributes) > 64 {
++		return fmt.Errorf("tokenFields and tokenAttributes each allow at most 64 entries")
++	}
++	names := map[string]bool{}
++	claimName := func(name string) error {
++		if name == "" || len(name) > 256 || !utf8.ValidString(name) || strings.TrimSpace(name) != name || strings.IndexFunc(name, unicode.IsControl) >= 0 {
++			return fmt.Errorf("claim name must be 1 to 256 bytes of valid text without surrounding whitespace or control characters")
++		}
++		if isProtectedCustomClaim(name) {
++			return fmt.Errorf("protocol claim names cannot be customized")
++		}
++		if names[name] {
++			return fmt.Errorf("claim name is configured more than once")
++		}
++		names[name] = true
++		return nil
++	}
++	userField := func(field string) bool {
++		if strings.HasPrefix(field, "Properties.") {
++			key := strings.TrimPrefix(field, "Properties.")
++			return key != "" && !strings.Contains(key, ".") && len(key) <= 256 && utf8.ValidString(key) && strings.TrimSpace(key) == key && strings.IndexFunc(key, unicode.IsControl) < 0
++		}
++		if field == "permissionNames" {
++			return true
++		}
++		member, ok := reflect.TypeOf(User{}).FieldByName(field)
++		return ok && member.PkgPath == ""
++	}
++	for i, field := range application.TokenFields {
++		name := util.SnakeToCamel(util.CamelToSnakeCase(field))
++		if strings.HasPrefix(field, "Properties.") {
++			name = strings.TrimPrefix(field, "Properties.")
++		} else if field == "signinMethod" || field == "provider" {
++			name = field
++		} else if !userField(field) {
++			return fmt.Errorf("tokenFields entry %d: unknown user field", i+1)
++		}
++		if strings.HasPrefix(field, "Properties.") && !userField(field) {
++			return fmt.Errorf("tokenFields entry %d: invalid property field", i+1)
++		}
++		if err := claimName(name); err != nil {
++			return fmt.Errorf("tokenFields entry %d: %w", i+1, err)
++		}
++	}
++	for i, item := range application.TokenAttributes {
++		if item == nil {
++			return fmt.Errorf("tokenAttributes entry %d: entry cannot be null", i+1)
++		}
++		if err := claimName(item.Name); err != nil {
++			return fmt.Errorf("tokenAttributes entry %d: %w", i+1, err)
++		}
++		switch item.Category {
++		case "", "Static Value", "Existing Field":
++		default:
++			return fmt.Errorf("tokenAttributes entry %d: unknown category", i+1)
++		}
++		switch item.Type {
++		case "", "String", "Array", "JSON":
++		default:
++			return fmt.Errorf("tokenAttributes entry %d: unknown type", i+1)
++		}
++		if len(item.Value) > 8192 {
++			return fmt.Errorf("tokenAttributes entry %d: value exceeds 8192 bytes", i+1)
++		}
++		if item.Category == "Existing Field" {
++			if !userField(item.Value) {
++				return fmt.Errorf("tokenAttributes entry %d: unknown user field", i+1)
++			}
++		} else if item.Type == "JSON" && !json.Valid([]byte(item.Value)) {
++			return fmt.Errorf("tokenAttributes entry %d: invalid JSON value", i+1)
++		}
++	}
++	return nil
++}
++
++// Partial updates validate the effective claim configuration, without requiring
++// unrelated omitted fields or trusting claim fields that will not be written.
++func validateUpdatedCustomClaimConfiguration(application, previous *Application, columns []string) error {
++	effective := *previous
++	if len(columns) == 0 {
++		return validateCustomClaimConfiguration(application)
++	}
++	for _, column := range columns {
++		if column == "token_fields" {
++			effective.TokenFields = application.TokenFields
++		}
++		if column == "token_attributes" {
++			effective.TokenAttributes = application.TokenAttributes
++		}
++	}
++	return validateCustomClaimConfiguration(&effective)
++}
+diff --git a/object/thesmos_claim_configuration_test.go b/object/thesmos_claim_configuration_test.go
+new file mode 100644
+index 0000000..8027744
+--- /dev/null
++++ b/object/thesmos_claim_configuration_test.go
+@@ -0,0 +1,192 @@
++// Copyright 2026 The Thesmos integration contributors.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//      http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package object
++
++import (
++	"github.com/xorm-io/xorm"
++	"reflect"
++	"strings"
++	"testing"
++)
++
++func TestEvaluationClaimConfiguration(t *testing.T) {
++	attribute := func(name, category, kind, value string) *Application {
++		return &Application{TokenAttributes: []*JwtItem{{Name: name, Category: category, Type: kind, Value: value}}}
++	}
++	cases := []struct {
++		name  string
++		app   *Application
++		valid bool
++	}{
++		{"empty", &Application{}, true},
++		{"namespaced JSON", attribute("https://api.example/roles", "Static Value", "JSON", `{"roles":["reader"],"enabled":true}`), true},
++		{"array template", attribute("groups", "Static Value", "Array", "$user.groups"), true},
++		{"boolean field", attribute("email_verified", "Existing Field", "String", "EmailVerified"), true},
++		{"field property", attribute("custom", "Existing Field", "String", "Properties.my_key"), true},
++		{"default category and type", attribute("custom", "", "", "fixed"), true},
++		{"selected fields", &Application{TokenFields: []string{"Email", "Roles", "permissionNames", "signinMethod", "provider", "Properties.tenant"}}, true},
++		{"null row", &Application{TokenAttributes: []*JwtItem{nil}}, false},
++		{"empty name", attribute("", "Static Value", "String", "fixed"), false},
++		{"whitespace name", attribute(" custom", "Static Value", "String", "fixed"), false},
++		{"control name", attribute("a\nb", "Static Value", "String", "fixed"), false},
++		{"invalid UTF8", attribute(string([]byte{255}), "Static Value", "String", "fixed"), false},
++		{"long name", attribute(strings.Repeat("a", 257), "Static Value", "String", "fixed"), false},
++		{"bad JSON", attribute("custom", "Static Value", "JSON", `{"roles":`), false},
++		{"null JSON", attribute("custom", "Static Value", "JSON", `null`), true},
++		{"unknown category", attribute("custom", "Script", "String", "fixed"), false},
++		{"unknown type", attribute("custom", "Static Value", "Integer", "1"), false},
++		{"unknown source", attribute("custom", "Existing Field", "String", "EmailTypo"), false},
++		{"nested property", attribute("custom", "Existing Field", "String", "Properties.a.b"), false},
++		{"empty property", &Application{TokenFields: []string{"Properties."}}, false},
++		{"unknown selected field", &Application{TokenFields: []string{"EmailTypo"}}, false},
++		{"attribute collision", &Application{TokenAttributes: []*JwtItem{{Name: "a"}, {Name: "a"}}}, false},
++		{"field collision", &Application{TokenFields: []string{"Email", "Properties.email"}}, false},
++		{"field and attribute collision", &Application{TokenFields: []string{"Email"}, TokenAttributes: []*JwtItem{{Name: "email"}}}, false},
++		{"oversized value", attribute("custom", "Static Value", "String", strings.Repeat("a", 8193)), false},
++		{"too many fields", &Application{TokenFields: make([]string, 65)}, false},
++		{"too many attributes", &Application{TokenAttributes: make([]*JwtItem, 65)}, false},
++	}
++	for _, name := range []string{"iss", "sub", "aud", "exp", "nbf", "iat", "jti", "tokenType", "azp", "nonce", "scope", "cnf"} {
++		cases = append(cases, struct {
++			name  string
++			app   *Application
++			valid bool
++		}{"reserved attribute " + name, attribute(name, "Static Value", "String", "override"), false})
++		cases = append(cases, struct {
++			name  string
++			app   *Application
++			valid bool
++		}{"reserved property " + name, &Application{TokenFields: []string{"Properties." + name}}, false})
++	}
++	for _, tc := range cases {
++		t.Run(tc.name, func(t *testing.T) {
++			err := validateCustomClaimConfiguration(tc.app)
++			if (err == nil) != tc.valid {
++				t.Fatalf("valid=%v error=%v", tc.valid, err)
++			}
++		})
++	}
++	// Accepted literals retain native JSON types and existing fields retain their
++	// native boolean value; validation must not alter this issuance contract.
++	app := attribute("namespace", "Static Value", "JSON", `{"roles":["reader"],"enabled":true}`)
++	app.TokenAttributes = append(app.TokenAttributes, &JwtItem{Name: "email_verified", Category: "Existing Field", Type: "String", Value: "EmailVerified"})
++	if err := validateCustomClaimConfiguration(app); err != nil {
++		t.Fatal(err)
++	}
++	claims := getClaimsCustom(Claims{User: &User{EmailVerified: true}}, nil, app.TokenAttributes)
++	if !reflect.DeepEqual(claims["namespace"], map[string]interface{}{"roles": []interface{}{"reader"}, "enabled": true}) || claims["email_verified"] != true {
++		t.Fatal("accepted claim types changed")
++	}
++	getClaimsCustom(Claims{User: &User{}}, nil, []*JwtItem{nil}) // imported legacy null row must not panic
++}
++
++func TestEvaluationPartialClaimConfiguration(t *testing.T) {
++	previous := &Application{TokenFields: []string{"Email"}, TokenAttributes: []*JwtItem{{Name: "groups", Type: "Array", Value: "reader"}}}
++	cases := []struct {
++		name    string
++		app     *Application
++		columns []string
++		valid   bool
++	}{
++		{"unrelated partial ignores unpersisted malformed attributes", &Application{TokenAttributes: []*JwtItem{nil}}, []string{"display_name"}, true},
++		{"partial field update retains attributes", &Application{TokenFields: []string{"Properties.groups"}}, []string{"token_fields"}, false},
++		{"partial attribute update retains fields", &Application{TokenAttributes: []*JwtItem{{Name: "email"}}}, []string{"token_attributes"}, false},
++		{"clear attributes", &Application{}, []string{"token_attributes"}, true},
++		{"replace both", &Application{TokenFields: []string{"Email"}, TokenAttributes: []*JwtItem{{Name: "groups"}}}, []string{"token_fields", "token_attributes"}, true},
++		{"full update", &Application{TokenAttributes: []*JwtItem{{Name: "iss"}}}, nil, false},
++	}
++	for _, tc := range cases {
++		t.Run(tc.name, func(t *testing.T) {
++			err := validateUpdatedCustomClaimConfiguration(tc.app, previous, tc.columns)
++			if (err == nil) != tc.valid {
++				t.Fatalf("valid=%v error=%v", tc.valid, err)
++			}
++		})
++	}
++}
++
++func TestEvaluationInvalidClaimsDoNotPersist(t *testing.T) {
++	engine, err := xorm.NewEngine("sqlite", t.TempDir()+"/claims.sqlite")
++	if err != nil {
++		t.Fatal(err)
++	}
++	old := ormer
++	ormer = &Ormer{Engine: engine}
++	t.Cleanup(func() { ormer = old; engine.Close() })
++	if err := engine.Sync2(&Application{}, &Organization{}, &Provider{}); err != nil {
++		t.Fatal(err)
++	}
++	existing := &Application{Owner: "admin", Name: "existing", Organization: "tenant", ClientId: "client", TokenFormat: "JWT-Custom", TokenFields: []string{"Email"}}
++	if _, err := engine.Insert(existing); err != nil {
++		t.Fatal(err)
++	}
++	invalid := *existing
++	invalid.Name = "renamed"
++	invalid.TokenAttributes = []*JwtItem{{Name: "iss", Type: "String", Value: "must-not-persist"}}
++	if affected, err := UpdateApplication("admin/existing", &invalid, true, "en", nil); affected || err == nil || !strings.Contains(err.Error(), "protocol claim") {
++		t.Fatalf("invalid update: affected=%v err=%v", affected, err)
++	}
++	var stored Application
++	found, err := engine.Where("owner=? AND name=?", "admin", "existing").Get(&stored)
++	if err != nil || !found || len(stored.TokenAttributes) != 0 {
++		t.Fatal("invalid update altered stored configuration")
++	}
++	if affected, err := AddApplication(&invalid, "en"); affected || err == nil || !strings.Contains(err.Error(), "protocol claim") {
++		t.Fatalf("invalid add: affected=%v err=%v", affected, err)
++	}
++	count, err := engine.Where("owner=? AND name=?", "admin", "renamed").Count(&Application{})
++	if err != nil || count != 0 {
++		t.Fatal("invalid add persisted")
++	}
++}
++
++func TestEvaluationPartialClaimsOnlyWriteSelectedColumns(t *testing.T) {
++	engine, err := xorm.NewEngine("sqlite", t.TempDir()+"/partial.sqlite")
++	if err != nil {
++		t.Fatal(err)
++	}
++	old := ormer
++	ormer = &Ormer{Engine: engine}
++	t.Cleanup(func() { ormer = old; engine.Close() })
++	if err := engine.Sync2(&Application{}, &Organization{}, &Provider{}); err != nil {
++		t.Fatal(err)
++	}
++	existing := &Application{Owner: "admin", Name: "existing", Organization: "tenant", ClientId: "client", TokenFormat: "JWT-Custom", TokenFields: []string{"Name"}, TokenAttributes: []*JwtItem{{Name: "groups", Type: "Array", Value: "reader"}}}
++	if _, err := engine.Insert(existing); err != nil {
++		t.Fatal(err)
++	}
++	partial := *existing
++	partial.Name = "unselected-rename"
++	partial.DisplayName = "Selected display"
++	partial.TokenAttributes = []*JwtItem{nil}
++	if affected, err := UpdateApplication("admin/existing", &partial, true, "en", []string{"display_name"}); !affected || err != nil {
++		t.Fatalf("partial update: affected=%v error=%v", affected, err)
++	}
++	var stored Application
++	found, err := engine.Where("owner=? AND name=?", "admin", "existing").Get(&stored)
++	if err != nil || !found || stored.DisplayName != partial.DisplayName || !reflect.DeepEqual(stored.TokenFields, existing.TokenFields) || !reflect.DeepEqual(stored.TokenAttributes, existing.TokenAttributes) {
++		t.Fatal("partial update changed unselected claim configuration or name")
++	}
++	partial = *existing
++	partial.TokenAttributes = nil
++	if affected, err := UpdateApplication("admin/existing", &partial, true, "en", []string{"token_attributes"}); !affected || err != nil {
++		t.Fatalf("partial clear: affected=%v error=%v", affected, err)
++	}
++	stored = Application{}
++	found, err = engine.Where("owner=? AND name=?", "admin", "existing").Get(&stored)
++	if err != nil || !found || len(stored.TokenAttributes) != 0 || !reflect.DeepEqual(stored.TokenFields, existing.TokenFields) {
++		t.Fatal("partial clear did not preserve fields and clear attributes")
++	}
++}
+diff --git a/object/token_jwt.go b/object/token_jwt.go
+index 0372dd7..596f7aa 100644
+--- a/object/token_jwt.go
++++ b/object/token_jwt.go
+@@ -477,7 +477,7 @@ func getClaimsCustom(claims Claims, tokenField []string, tokenAttributes []*JwtI
+ 	}
+ 
+ 	for _, item := range tokenAttributes {
+-		if isProtectedCustomClaim(item.Name) {
++		if item == nil || isProtectedCustomClaim(item.Name) {
+ 			continue
+ 		}
+ 		var value interface{}

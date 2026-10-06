@@ -1,0 +1,90 @@
+name: Publish accepted image
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: registry-release
+  cancel-in-progress: false
+jobs:
+  acceptance:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - run: python3 scripts/validate-project.py --release
+  publish:
+    needs: acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      REGISTRY_URL: ${{ vars.REGISTRY_URL }}
+      REGISTRY_IMAGE: ${{ vars.REGISTRY_IMAGE }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Validate registry settings and export pinned build inputs
+        run: |
+          python3 scripts/validate-project.py --release
+          python3 - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          host = os.environ['REGISTRY_URL']
+          image = os.environ['REGISTRY_IMAGE']
+          if not re.fullmatch(r'[a-z0-9.-]+(?::[0-9]+)?', host):
+              raise ValueError('Set REGISTRY_URL to a registry hostname, optionally with a port')
+          if not image.startswith(host + '/') or not re.fullmatch(r'[a-z0-9./:_-]+', image) or ':' in image[len(host)+1:]:
+              raise ValueError('Set REGISTRY_IMAGE to the full image repository path, without a tag')
+          build = json.loads(Path('build.lock.json').read_text())
+          source = json.loads(Path('upstream.lock.json').read_text())
+          values = {'image_tag': image + ':' + build['version'], 'version': build['version'], 'upstream_commit': source['commit'], **build}
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              for name, value in values.items():
+                  output.write(f'{name}={value}\n')
+          PY
+        id: inputs
+      - name: Prepare exact source
+        run: python3 scripts/prepare-source.py
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Log in to selected registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          registry: ${{ vars.REGISTRY_URL }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - name: Build and publish accepted image
+        id: image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.inputs.outputs.image_tag }}
+          provenance: mode=max
+          sbom: true
+          build-args: |
+            GO_IMAGE=${{ steps.inputs.outputs.go_image }}
+            NODE_IMAGE=${{ steps.inputs.outputs.node_image }}
+            RUNTIME_IMAGE=${{ steps.inputs.outputs.runtime_image }}
+            YARN_VERSION=${{ steps.inputs.outputs.yarn_version }}
+            INTEGRATION_VERSION=${{ steps.inputs.outputs.version }}
+            UPSTREAM_COMMIT=${{ steps.inputs.outputs.upstream_commit }}
+            INTEGRATION_REVISION=${{ github.sha }}
+            PRODUCTION_APPROVED=true
+      - name: Sign and verify exact image digest
+        env:
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+          SIGNING_IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/publish.yml@${{ github.ref }}
+        run: |
+          cosign sign --yes "$REGISTRY_IMAGE@$IMAGE_DIGEST"
+          cosign verify --certificate-identity "$SIGNING_IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com "$REGISTRY_IMAGE@$IMAGE_DIGEST"
+          printf 'Published image: `%s@%s`\n' "$REGISTRY_IMAGE" "$IMAGE_DIGEST" >> "$GITHUB_STEP_SUMMARY"
