@@ -10,6 +10,7 @@ organization credentials into repository secrets. Configure these names:
 | --- | --- | --- |
 | `REGISTRY_URL` | Actions variable | Registry hostname, optionally with port; no `https://` prefix |
 | `REGISTRY_IMAGE` | Actions variable | Image name such as `casdoor`, namespace/name, or full repository path; no tag |
+| `PUBLIC_REGISTRY_URL` | Optional Actions variable | Anonymous consumer mirror hostname; uses the same repository path |
 | `REGISTRY_USERNAME` | Actions secret | Registry login identity |
 | `REGISTRY_PASSWORD` | Actions secret | Registry token or password |
 
@@ -31,6 +32,48 @@ A registry that permits anonymous reads can report a successful Docker login
 without proving the supplied account can upload. Check the account's push rights
 for the normalized `REGISTRY_IMAGE` path. A failed upload probe occurs before the
 publication workflow spends time building the image.
+
+## Separate upload origin and public mirror
+
+When a public registry is a read-only mirror, upload to the authenticated origin.
+The repository's Zot deployment uses these repository-level variable overrides:
+
+| Variable | Value |
+| --- | --- |
+| `REGISTRY_URL` | `customers.thesmos.dev` |
+| `REGISTRY_IMAGE` | `thesmos/casdoor` |
+| `PUBLIC_REGISTRY_URL` | `registry.thesmos.dev` |
+
+The organization-wide settings are retained. The inherited credentials must
+identify the origin's authorized CI account. The image path matches the public
+mirror's `thesmos/**` sync selection. Do not upload to the read-only mirror or
+enable anonymous writes there.
+
+In the mirror configuration, set `preserveDigest` on the upstream sync entry:
+
+```json
+{
+  "urls": ["http://zot:5000"],
+  "tlsVerify": false,
+  "onDemand": true,
+  "pollInterval": "1h",
+  "preserveDigest": true,
+  "content": [{ "prefix": "thesmos/**" }]
+}
+```
+
+Keep the mirror's existing `http.compat: ["docker2s2"]`, credential-file setting
+and private upstream connectivity. This fragment replaces only one registry
+entry; it is not a complete Zot configuration. Verify that the deployed Zot
+version supports these settings before applying them.
+[Zot's mirroring guide](https://zotregistry.dev/latest/articles/mirroring/)
+documents digest/signature/referrer preservation.
+
+After signing at the origin, the publication workflow uses an empty Docker
+credential configuration to pull the mirror tag and exact origin digest, verify
+the image signature and SPDX attestation, and test the pulled image. A missing
+digest or signed artifact fails publication acceptance. The final consumer
+reference uses the public mirror only after those checks succeed.
 
 The project environment is configured to require owner review, restrict deployment
 to `main`, and disable administrator bypass. Preserve these protections. Use a

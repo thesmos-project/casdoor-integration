@@ -36,6 +36,10 @@ This is not an independent security/legal review or production approval.
   locations, plain/encoded path traversal, and failed cleanup. Credentials and
   upload-state tokens are omitted from its output. No image bytes or build steps
   changed in this permission-check revision.
+- Repository and mirror resolution checked with and without a public registry:
+  the repository path is preserved, and the final consumer reference switches
+  to the public mirror only after anonymous pull/signature/attestation/runtime
+  checks. All workflow changes pass actionlint.
 
 ## Registry publication status
 
@@ -44,7 +48,14 @@ passed source/build/distribution/runtime checks but the registry rejected upload
 with an authentication failure. No version tag was created, and signing and
 published-digest testing did not run. A successful login against the public read
 endpoint does not prove the configured credentials have upload permission.
-The next attempt checks authenticated upload creation and cancellation first.
+The supplied Zot configuration explains the failure: that host is the read-only
+mirror. Repository variables now select `customers.thesmos.dev/thesmos/casdoor`
+as the upload origin and `registry.thesmos.dev/thesmos/casdoor` as the consumer
+mirror, without changing organization-wide variables.
+[The corrected origin check](https://github.com/thesmos-project/casdoor-integration/actions/runs/37513195157)
+passed authenticated upload creation (202) and cancellation (204). No image was
+published by that check. The next publication attempt checks upload access first
+and must verify anonymous access and signed evidence through the public mirror.
 
 ## Distribution limits
 

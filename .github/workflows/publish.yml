@@ -51,6 +51,7 @@ jobs:
     env:
       REGISTRY_URL: ${{ vars.REGISTRY_URL }}
       REGISTRY_IMAGE: ${{ vars.REGISTRY_IMAGE }}
+      PUBLIC_REGISTRY_URL: ${{ vars.PUBLIC_REGISTRY_URL }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -147,11 +148,27 @@ jobs:
           cosign attest --yes --type spdxjson --predicate .local/distribution.spdx.json "$IMAGE_REPOSITORY@$IMAGE_DIGEST"
           cosign verify-attestation --type spdxjson --certificate-identity "$SIGNING_IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com "$IMAGE_REPOSITORY@$IMAGE_DIGEST"
       - name: Pull and test the published digest
+        if: vars.PUBLIC_REGISTRY_URL == ''
         env:
           PUBLISHED_IMAGE: ${{ steps.inputs.outputs.image }}@${{ steps.image.outputs.digest }}
         run: |
           docker pull "$PUBLISHED_IMAGE"
           python3 scripts/smoke-image.py --image "$PUBLISHED_IMAGE" --output .local/published-image-smoke.json
+      - name: Verify anonymous mirror pull and signed evidence
+        if: vars.PUBLIC_REGISTRY_URL != ''
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/anonymous-registry
+          PUBLIC_IMAGE: ${{ steps.inputs.outputs.public_image }}@${{ steps.image.outputs.digest }}
+          PUBLIC_TAG: ${{ steps.inputs.outputs.public_image_tag }}
+          SIGNING_IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/publish.yml@${{ github.ref }}
+        run: |
+          mkdir -p "$DOCKER_CONFIG"
+          printf '{"auths":{}}\n' > "$DOCKER_CONFIG/config.json"
+          docker pull "$PUBLIC_TAG"
+          docker pull "$PUBLIC_IMAGE"
+          cosign verify --certificate-identity "$SIGNING_IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com "$PUBLIC_IMAGE"
+          cosign verify-attestation --type spdxjson --certificate-identity "$SIGNING_IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com "$PUBLIC_IMAGE"
+          python3 scripts/smoke-image.py --image "$PUBLIC_IMAGE" --output .local/public-mirror-smoke.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: published-image-checks
@@ -159,12 +176,13 @@ jobs:
             .local/distribution-report.json
             .local/image-smoke.json
             .local/published-image-smoke.json
+            .local/public-mirror-smoke.json
             .local/distribution.spdx.json
           include-hidden-files: true
           retention-days: 90
       - name: Report verified published image
         env:
-          PUBLISHED_IMAGE: ${{ steps.inputs.outputs.image }}@${{ steps.image.outputs.digest }}
+          PUBLISHED_IMAGE: ${{ steps.inputs.outputs.public_image }}@${{ steps.image.outputs.digest }}
           RELEASE_CHANNEL: ${{ inputs.channel }}
         run: |
           printf 'Verified %s image: `%s`\n' "$RELEASE_CHANNEL" "$PUBLISHED_IMAGE" >> "$GITHUB_STEP_SUMMARY"

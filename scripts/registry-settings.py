@@ -27,9 +27,12 @@ def resolve_image(host, image):
 def main():
     host = os.environ.get("REGISTRY_URL", "")
     image = resolve_image(host, os.environ.get("REGISTRY_IMAGE", ""))
+    public_host = os.environ.get("PUBLIC_REGISTRY_URL", "")
+    public_image = resolve_image(public_host, image[len(host) + 1:]) if public_host else image
     build = json.loads((ROOT / "build.lock.json").read_text())
     source = json.loads((ROOT / "upstream.lock.json").read_text())
     values = {"image": image, "image_tag": image + ":" + build["version"],
+              "public_image": public_image, "public_image_tag": public_image + ":" + build["version"],
               "version": build["version"], "upstream_commit": source["commit"], **build}
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a") as output:
@@ -37,6 +40,8 @@ def main():
                 output.write(f"{name}={value}\n")
     # Registry credentials are deliberately never read by this helper.
     print(f"Resolved image repository: {image}")
+    if public_image != image:
+        print(f"Resolved consumer image repository: {public_image}")
 
 
 if __name__ == "__main__":
