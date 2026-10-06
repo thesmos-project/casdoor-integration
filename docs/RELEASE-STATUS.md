@@ -85,8 +85,10 @@ relinking. Test these changes against the existing deployment before upgrading.
 ## Production work still required
 
 Production approval remains open for exact-source advisory analysis and independent security review;
-live protocol and key-rotation acceptance; upgrade/rollback and backup recovery;
-public HTTPS/proxy configuration and durable storage; and deployment capacity.
+a public HTTPS/proxy recipe and durable media/session storage; and deployment capacity.
+Upgrade, rollback, key rotation and backup restore are covered by the
+[upgrade acceptance test](VALIDATION.md); OIDC, SAML and SCIM with Thesmos were
+accepted over a TLS proxy in a separate evaluation stack.
 Dependency and asset licensing also require review for the accepted release.
 
 Passing compilation, regression tests or an image signature does not close those

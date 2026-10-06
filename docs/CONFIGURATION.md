@@ -222,3 +222,29 @@ unchanged during an overlap, because older tokens must use the application's
 current algorithm. Without it, the existing single-key behavior is
 preserved. Configure relying-party key distribution separately; see the
 [rotation and upgrade limits](RELEASE-STATUS.md#upgrade-considerations).
+
+## Upgrade, rollback and backup
+
+Pin the image by digest and change the digest to upgrade. Casdoor updates its
+tables on startup; settings, clients, signing keys and issued tokens carry over.
+Between `rc.1` and `rc.2`, rolling back to the previous digest is supported in
+both directions. Back up the database before every upgrade.
+
+With a restricted role named `casdoor`, a consistent online backup and a restore
+into a new database look like this:
+
+```sh
+pg_dump -Fc -f casdoor.dump casdoor
+createdb -O casdoor casdoor_restore
+pg_restore --no-owner --role=casdoor -d casdoor_restore casdoor.dump
+```
+
+Point `dbName` and `dataSourceName` at the restored database and start the same
+image. The restored instance keeps its signing keys, so tokens issued before the
+backup stay valid and refreshable. Keep the same `origin`, so the token issuer is
+unchanged.
+
+To rotate an application's signing key, create a JWT certificate, set it as the
+application's `cert`, and list the previous certificate in `retainedSigningCerts`
+for up to 24 hours; see [signing-key overlap](#jwt-signing-key-overlap). Remove
+the retention after older tokens have expired.
