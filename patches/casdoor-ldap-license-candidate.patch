@@ -1,0 +1,26 @@
+diff --git a/go.mod b/go.mod
+index b387fde..43210f3 100644
+--- a/go.mod
++++ b/go.mod
+@@ -53,7 +53,7 @@ require (
+ 	github.com/lib/pq v1.10.9
+ 	github.com/likexian/whois v1.15.1
+ 	github.com/likexian/whois-parser v1.24.9
+-	github.com/lor00x/goldap v0.0.0-20180618054307-a546dffdd1a3
++	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
+ 	github.com/markbates/goth v1.82.0
+ 	github.com/microsoft/go-mssqldb v1.9.0
+ 	github.com/mitchellh/mapstructure v1.5.0
+diff --git a/go.sum b/go.sum
+index 25b603c..d6fc254 100644
+--- a/go.sum
++++ b/go.sum
+@@ -1450,6 +1450,8 @@ github.com/localtunnel/go-localtunnel v0.0.0-20170326223115-8a804488f275 h1:IZyc
+ github.com/localtunnel/go-localtunnel v0.0.0-20170326223115-8a804488f275/go.mod h1:zt6UU74K6Z6oMOYJbJzYpYucqdcQwSMPBEdSvGiaUMw=
+ github.com/lor00x/goldap v0.0.0-20180618054307-a546dffdd1a3 h1:wIONC+HMNRqmWBjuMxhatuSzHaljStc4gjDeKycxy0A=
+ github.com/lor00x/goldap v0.0.0-20180618054307-a546dffdd1a3/go.mod h1:37YR9jabpiIxsb8X9VCIx8qFOjTDIIrIHHODa8C4gz0=
++github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8 h1:z9RDOBcFcf3f2hSfKuoM3/FmJpt8M+w0fOy4wKneBmc=
++github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8/go.mod h1:37YR9jabpiIxsb8X9VCIx8qFOjTDIIrIHHODa8C4gz0=
+ github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 h1:6E+4a0GO5zZEnZ81pIr0yLvtUWk2if982qA3F3QD6H4=
+ github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0/go.mod h1:zJYVVT2jmtg6P3p1VtQj7WsuWi/y4VnjVBn7F8KPB3I=
+ github.com/lyft/protoc-gen-star v0.6.0/go.mod h1:TGAoBVkt8w7MPG72TrKIu85MIdXwDuzJYeZuUPFPNwA=

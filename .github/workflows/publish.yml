@@ -1,6 +1,13 @@
-name: Publish accepted image
+name: Publish integration image
 on:
   workflow_dispatch:
+    inputs:
+      channel:
+        description: Release channel
+        type: choice
+        options: [candidate, stable]
+        default: candidate
+        required: true
 permissions:
   contents: read
 concurrency:
@@ -11,11 +18,28 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    outputs:
+      production_approved: ${{ steps.acceptance.outputs.production_approved }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
-      - run: python3 scripts/validate-project.py --release
+      - name: Validate selected channel acceptance
+        id: acceptance
+        env:
+          RELEASE_CHANNEL: ${{ inputs.channel }}
+        run: |
+          case "$RELEASE_CHANNEL" in
+            candidate)
+              python3 scripts/validate-project.py --candidate
+              echo 'production_approved=false' >> "$GITHUB_OUTPUT"
+              ;;
+            stable)
+              python3 scripts/validate-project.py --release
+              echo 'production_approved=true' >> "$GITHUB_OUTPUT"
+              ;;
+            *) echo 'Unknown release channel.' >&2; exit 2 ;;
+          esac
   publish:
     needs: acceptance
     runs-on: ubuntu-24.04
@@ -33,11 +57,15 @@ jobs:
           persist-credentials: false
       - name: Validate registry settings and export pinned build inputs
         run: |
-          python3 scripts/validate-project.py --release
+          python3 scripts/validate-project.py
           python3 scripts/registry-settings.py
         id: inputs
-      - name: Prepare exact source
-        run: python3 scripts/prepare-source.py
+      - name: Prepare exact source and corresponding OS source kit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/prepare-source.py
+          python3 scripts/os-source-kit.py
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - name: Log in to selected registry
@@ -46,6 +74,44 @@ jobs:
           registry: ${{ vars.REGISTRY_URL }}
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
+      - name: Build the image for distribution and runtime checks
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: casdoor-integration:publication-check
+          build-args: |
+            GO_IMAGE=${{ steps.inputs.outputs.go_image }}
+            NODE_IMAGE=${{ steps.inputs.outputs.node_image }}
+            RUNTIME_IMAGE=${{ steps.inputs.outputs.runtime_image }}
+            YARN_VERSION=${{ steps.inputs.outputs.yarn_version }}
+            INTEGRATION_VERSION=${{ steps.inputs.outputs.version }}
+            UPSTREAM_COMMIT=${{ steps.inputs.outputs.upstream_commit }}
+            INTEGRATION_REVISION=${{ github.sha }}
+            PRODUCTION_APPROVED=${{ needs.acceptance.outputs.production_approved }}
+      - name: Check image notices and runtime before publishing
+        run: |
+          container=$(docker create casdoor-integration:publication-check)
+          docker cp "$container:/licenses" .local/image-licenses
+          docker rm "$container"
+          python3 scripts/distribution-report.py .local/image-licenses --require-complete --output .local/distribution-report.json
+          python3 scripts/make-sbom.py .local/image-licenses .local/distribution.spdx.json
+          python3 scripts/smoke-image.py --image casdoor-integration:publication-check
+      - name: Refuse replacement of an existing version tag
+        env:
+          VERSION_TAG: ${{ steps.inputs.outputs.image_tag }}
+        run: |
+          set +e
+          docker buildx imagetools inspect "$VERSION_TAG" > .local/version-tag-check.log 2>&1
+          result=$?
+          set -e
+          if [ "$result" -eq 0 ]; then
+            echo 'This version tag already exists. Select a new version in build.lock.json.' >&2
+            exit 2
+          fi
+          python3 scripts/check-absent-tag.py .local/version-tag-check.log
       - name: Build and publish accepted image
         id: image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
@@ -64,7 +130,7 @@ jobs:
             INTEGRATION_VERSION=${{ steps.inputs.outputs.version }}
             UPSTREAM_COMMIT=${{ steps.inputs.outputs.upstream_commit }}
             INTEGRATION_REVISION=${{ github.sha }}
-            PRODUCTION_APPROVED=true
+            PRODUCTION_APPROVED=${{ needs.acceptance.outputs.production_approved }}
       - name: Sign and verify exact image digest
         env:
           IMAGE_REPOSITORY: ${{ steps.inputs.outputs.image }}
@@ -73,4 +139,27 @@ jobs:
         run: |
           cosign sign --yes "$IMAGE_REPOSITORY@$IMAGE_DIGEST"
           cosign verify --certificate-identity "$SIGNING_IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com "$IMAGE_REPOSITORY@$IMAGE_DIGEST"
-          printf 'Published image: `%s@%s`\n' "$IMAGE_REPOSITORY" "$IMAGE_DIGEST" >> "$GITHUB_STEP_SUMMARY"
+          cosign attest --yes --type spdxjson --predicate .local/distribution.spdx.json "$IMAGE_REPOSITORY@$IMAGE_DIGEST"
+          cosign verify-attestation --type spdxjson --certificate-identity "$SIGNING_IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com "$IMAGE_REPOSITORY@$IMAGE_DIGEST"
+      - name: Pull and test the published digest
+        env:
+          PUBLISHED_IMAGE: ${{ steps.inputs.outputs.image }}@${{ steps.image.outputs.digest }}
+        run: |
+          docker pull "$PUBLISHED_IMAGE"
+          python3 scripts/smoke-image.py --image "$PUBLISHED_IMAGE" --output .local/published-image-smoke.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: published-image-checks
+          path: |
+            .local/distribution-report.json
+            .local/image-smoke.json
+            .local/published-image-smoke.json
+            .local/distribution.spdx.json
+          include-hidden-files: true
+          retention-days: 90
+      - name: Report verified published image
+        env:
+          PUBLISHED_IMAGE: ${{ steps.inputs.outputs.image }}@${{ steps.image.outputs.digest }}
+          RELEASE_CHANNEL: ${{ inputs.channel }}
+        run: |
+          printf 'Verified %s image: `%s`\n' "$RELEASE_CHANNEL" "$PUBLISHED_IMAGE" >> "$GITHUB_STEP_SUMMARY"

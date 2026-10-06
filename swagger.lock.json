@@ -1,0 +1,8 @@
+{
+  "version": "4.1.0",
+  "source_commit": "e0d1e19d6e9f2eb89055e2c758f7d5a588912e0e",
+  "package_lock_url": "https://raw.githubusercontent.com/swagger-api/swagger-ui/e0d1e19d6e9f2eb89055e2c758f7d5a588912e0e/package-lock.json",
+  "package_lock_sha256": "78dbce10ddb8748db493810d19f9f14e7a3c82e3204c2d8494414b1ea1d5f052",
+  "tarball": "https://registry.npmjs.org/swagger-ui-dist/-/swagger-ui-dist-4.1.0.tgz",
+  "integrity": "sha512-NVyDW2Rl0mLh1d44h/VN4beEzbopRQ2sujTmP25peBcCt9AGB96bF4fCUBF4+28KgeGxQfQcZiEfFv/1CyigbA=="
+}

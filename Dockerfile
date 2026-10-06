@@ -13,6 +13,9 @@ RUN --mount=type=cache,target=/usr/local/share/.cache/yarn \
     yarn install --frozen-lockfile --network-timeout 300000
 COPY .local/source/web/ ./
 RUN yarn typecheck && yarn build
+COPY scripts/frontend-notices.mjs /distribution-tools/scripts/frontend-notices.mjs
+COPY licenses/ /distribution-tools/licenses/
+RUN node /distribution-tools/scripts/frontend-notices.mjs /source/web /out/licenses/frontend /distribution-tools
 
 FROM ${GO_IMAGE} AS backend
 WORKDIR /source
@@ -26,18 +29,27 @@ ARG UPSTREAM_COMMIT
 RUN test "$TARGETARCH" = amd64
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=1 go test -race -p 2 ./object ./scim ./certificate \
-      -run 'TestEvaluation|TestSCIM|TestGetSyncerProviderSCIM' -count=1
+      -run 'TestEvaluation|TestSCIM|TestGetSyncerProviderSCIM' -count=1 \
+    && CGO_ENABLED=1 go test -race -p 2 ./ldap -count=1
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 go build -p 2 -mod=readonly -trimpath -buildvcs=false \
       -ldflags="-w -s -X github.com/casdoor/casdoor/util.Version=$INTEGRATION_VERSION -X github.com/casdoor/casdoor/util.CommitId=$UPSTREAM_COMMIT" \
       -o /out/server .
+COPY scripts/go-notices.py scripts/swagger-notices.py /distribution-tools/scripts/
+COPY licenses/ /distribution-tools/licenses/
+COPY swagger.lock.json /distribution-tools/swagger.lock.json
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 python3 /distribution-tools/scripts/go-notices.py /source /out/licenses/backend /distribution-tools
+RUN python3 /distribution-tools/scripts/swagger-notices.py /source/swagger /out/licenses/swagger /distribution-tools
 
 FROM ${RUNTIME_IMAGE} AS runtime
 RUN apk add --no-cache ca-certificates tzdata \
     && addgroup -g 1000 casdoor \
     && adduser -D -u 1000 -G casdoor casdoor \
     && mkdir -p /conf /files /logs /data /tmp \
-    && chown 1000:1000 /files /logs /data
+    && chown 1000:1000 /files /logs /data \
+    && mkdir -p /licenses/dependencies/os \
+    && cp /lib/apk/db/installed /licenses/dependencies/os/installed-packages
 WORKDIR /
 ARG INTEGRATION_VERSION
 ARG UPSTREAM_COMMIT
@@ -53,6 +65,10 @@ LABEL org.opencontainers.image.title="Casdoor with Thesmos integration patches" 
       io.thesmos.casdoor.production-approved="${PRODUCTION_APPROVED}"
 COPY --from=backend --chmod=0755 /out/server /server
 COPY --from=backend /source/swagger /swagger
+COPY --from=backend /out/licenses/swagger/supplement /swagger
+COPY --from=backend /out/licenses/ /licenses/dependencies/
+COPY --from=frontend /out/licenses/ /licenses/dependencies/
+COPY .local/os-source-kit/ /licenses/dependencies/os/source-kit/
 COPY --from=frontend /source/web/build /web/build
 COPY --from=backend /source/integration-provenance.json /licenses/integration-provenance.json
 COPY LICENSE NOTICE /licenses/

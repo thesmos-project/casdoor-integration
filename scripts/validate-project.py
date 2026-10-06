@@ -12,15 +12,17 @@ GATES = {
     "security_review", "dependency_and_asset_licensing", "bootstrap_mfa_and_recovery",
     "protocol_and_upgrade_acceptance", "deployment_and_capacity_acceptance", "independent_review",
 }
+CANDIDATE_GATES = {"distribution_review", "source_and_patch_provenance", "build_and_runtime_smoke"}
 
 
 def build_inputs_hash():
     digest = hashlib.sha256()
-    inputs = [ROOT / "upstream.lock.json", ROOT / "build.lock.json", ROOT / "Dockerfile", ROOT / ".dockerignore"]
-    inputs += sorted((ROOT / "scripts").glob("*.py"))
+    inputs = [ROOT / "upstream.lock.json", ROOT / "build.lock.json", ROOT / "swagger.lock.json", ROOT / "os.lock.json", ROOT / "Dockerfile", ROOT / ".dockerignore"]
+    inputs += sorted(p for p in (ROOT / "scripts").iterdir() if p.suffix in {".py", ".mjs"})
     inputs += sorted((ROOT / "docker").glob("*"))
-    inputs += sorted((ROOT / "licenses").glob("*"))
+    inputs += sorted(p for p in (ROOT / "licenses").rglob("*") if p.is_file())
     inputs += sorted((ROOT / ".github/workflows").glob("*.yml"))
+    inputs += sorted(p for p in (ROOT / "recipes").rglob("*") if p.is_file())
     inputs += [ROOT / "LICENSE", ROOT / "NOTICE"]
     for path in sorted(inputs):
         digest.update(path.relative_to(ROOT).as_posix().encode() + b"\0" + path.read_bytes())
@@ -29,7 +31,9 @@ def build_inputs_hash():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--release", action="store_true")
+    channel = parser.add_mutually_exclusive_group()
+    channel.add_argument("--release", action="store_true", help="Require full stable production acceptance")
+    channel.add_argument("--candidate", action="store_true", help="Require candidate distribution and runtime acceptance")
     parser.add_argument("--print-inputs-sha256", action="store_true")
     options = parser.parse_args()
     source = json.loads((ROOT / "upstream.lock.json").read_text())
@@ -61,10 +65,15 @@ def main():
     policy = json.loads((ROOT / "release-policy.json").read_text())
     if set(policy["required_acceptance"]) != GATES:
         raise ValueError("Release policy must retain every required acceptance gate")
+    candidate = policy["candidate"]
+    if set(candidate["required_acceptance"]) != CANDIDATE_GATES:
+        raise ValueError("Candidate policy must retain every required acceptance gate")
     if options.print_inputs_sha256:
         print(build_inputs_hash())
         return
     if options.release:
+        if "-rc." in build["version"]:
+            raise ValueError("Stable publishing requires a version without an rc suffix")
         if policy["production_ready"] is not True or policy["registry_publication_approved"] is not True:
             raise ValueError("Registry publishing is blocked: production and publication acceptance are pending")
         if any(value is not True for value in policy["required_acceptance"].values()):
@@ -74,6 +83,15 @@ def main():
             raise ValueError("Registry publishing is blocked: acceptance does not match current build inputs")
         if not policy.get("acceptance_evidence") or not policy.get("reviewed_by"):
             raise ValueError("Registry publishing is blocked: acceptance evidence and reviewer are required")
+    if options.candidate:
+        if "-rc." not in build["version"]:
+            raise ValueError("Candidate publishing requires an rc version")
+        if candidate["publication_approved"] is not True or any(v is not True for v in candidate["required_acceptance"].values()):
+            raise ValueError("Candidate publishing is blocked: distribution, provenance or runtime acceptance is pending")
+        if candidate.get("accepted_build_inputs_sha256") != build_inputs_hash():
+            raise ValueError("Candidate publishing is blocked: acceptance does not match current build inputs")
+        if not candidate.get("acceptance_evidence") or not candidate.get("reviewed_by"):
+            raise ValueError("Candidate publishing is blocked: evidence and reviewer are required")
     print(f"Validated {len(source['patches'])} pinned patches and build inputs" + (" for release" if options.release else "; production approval remains separate"))
 
 

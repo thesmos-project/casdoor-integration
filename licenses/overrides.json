@@ -1,0 +1,245 @@
+{
+  "npm:@tensorflow/tfjs-core@1.7.0": {
+    "files": [
+      {
+        "path": "licenses/recovered/npm-@tensorflow-tfjs-core@1.7.0-LICENSE",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "source": "https://api.github.com/repos/tensorflow/tfjs/git/blobs/d645695673349e3947e8e5ae42332d0ac3164cd7",
+        "repository": "tensorflow/tfjs",
+        "commit": "eeb32fbbaa1243f2c9685d5ec9b9d5191ff1a668",
+        "original_path": "LICENSE"
+      }
+    ]
+  },
+  "npm:victory-vendor@36.9.2": {
+    "files": [
+      {
+        "path": "licenses/recovered/npm-victory-vendor@36.9.2-LICENSE.txt",
+        "sha256": "34dee5fd5e5cc756efb5ad4d64652bce719bdf5e900ca5d7538253e737930bc4",
+        "source": "https://api.github.com/repos/FormidableLabs/victory/git/blobs/4d33f1aba85636b665016cabb1b991209177c606",
+        "repository": "FormidableLabs/victory",
+        "commit": "dd86278d205f3f306e2ab38c317a6f9c56f0a6f8",
+        "original_path": "LICENSE.txt"
+      }
+    ]
+  },
+  "npm:@uiw/react-codemirror@4.25.11": {
+    "files": [
+      {
+        "path": "licenses/recovered/npm-@uiw-react-codemirror@4.25.11-LICENSE",
+        "sha256": "fd1f049b3bb5cbaf5143516b72dbc6805cd30cca0cda94edb37160e37662fd17",
+        "source": "https://api.github.com/repos/uiwjs/react-codemirror/git/blobs/c8c4416e506168cf4e5022d51618748aac3b0029",
+        "repository": "uiwjs/react-codemirror",
+        "commit": "990500ad9ae72400272c873df3ae061860ff00c2",
+        "original_path": "LICENSE"
+      }
+    ]
+  },
+  "npm:@uiw/codemirror-extensions-basic-setup@4.25.11": {
+    "files": [
+      {
+        "path": "licenses/recovered/npm-@uiw-react-codemirror@4.25.11-LICENSE",
+        "sha256": "fd1f049b3bb5cbaf5143516b72dbc6805cd30cca0cda94edb37160e37662fd17",
+        "source": "https://api.github.com/repos/uiwjs/react-codemirror/git/blobs/c8c4416e506168cf4e5022d51618748aac3b0029",
+        "repository": "uiwjs/react-codemirror",
+        "commit": "990500ad9ae72400272c873df3ae061860ff00c2",
+        "original_path": "LICENSE"
+      }
+    ]
+  },
+  "npm:@uiw/codemirror-extensions-langs@4.25.11": {
+    "files": [
+      {
+        "path": "licenses/recovered/npm-@uiw-react-codemirror@4.25.11-LICENSE",
+        "sha256": "fd1f049b3bb5cbaf5143516b72dbc6805cd30cca0cda94edb37160e37662fd17",
+        "source": "https://api.github.com/repos/uiwjs/react-codemirror/git/blobs/c8c4416e506168cf4e5022d51618748aac3b0029",
+        "repository": "uiwjs/react-codemirror",
+        "commit": "990500ad9ae72400272c873df3ae061860ff00c2",
+        "original_path": "LICENSE"
+      }
+    ]
+  },
+  "npm:@uiw/codemirror-theme-material@4.25.11": {
+    "files": [
+      {
+        "path": "licenses/recovered/npm-@uiw-react-codemirror@4.25.11-LICENSE",
+        "sha256": "fd1f049b3bb5cbaf5143516b72dbc6805cd30cca0cda94edb37160e37662fd17",
+        "source": "https://api.github.com/repos/uiwjs/react-codemirror/git/blobs/c8c4416e506168cf4e5022d51618748aac3b0029",
+        "repository": "uiwjs/react-codemirror",
+        "commit": "990500ad9ae72400272c873df3ae061860ff00c2",
+        "original_path": "LICENSE"
+      }
+    ]
+  },
+  "npm:@uiw/codemirror-themes@4.25.11": {
+    "files": [
+      {
+        "path": "licenses/recovered/npm-@uiw-react-codemirror@4.25.11-LICENSE",
+        "sha256": "fd1f049b3bb5cbaf5143516b72dbc6805cd30cca0cda94edb37160e37662fd17",
+        "source": "https://api.github.com/repos/uiwjs/react-codemirror/git/blobs/c8c4416e506168cf4e5022d51618748aac3b0029",
+        "repository": "uiwjs/react-codemirror",
+        "commit": "990500ad9ae72400272c873df3ae061860ff00c2",
+        "original_path": "LICENSE"
+      }
+    ]
+  },
+  "npm:react-remove-scroll-bar@2.3.8": {
+    "note": "Published npm archive declares MIT but omits license text. This is the project license from a pinned upstream revision; npm gitHead does not supply a recoverable license file. Review this distinction when accepting distribution.",
+    "files": [
+      {
+        "path": "licenses/recovered/npm-react-remove-scroll-bar@2.3.8-LICENSE",
+        "sha256": "a79aae0c0f21990d9d963bb3c5a79cdcea9a46f8523ba55c58d7fe776b6ebc84",
+        "source": "https://api.github.com/repos/theKashey/react-remove-scroll-bar/git/blobs/7c08c3990396ecefd90f99ff5d9a34f26f5b5616",
+        "repository": "theKashey/react-remove-scroll-bar",
+        "commit": "8ca9ba5ea52de03308fe8ced94f7b159a44d28ff",
+        "original_path": "LICENSE"
+      }
+    ]
+  },
+  "npm:toggle-selection@1.0.6": {
+    "note": "Published npm archive declares MIT but omits license text. This is the project license from a pinned upstream revision; npm gitHead does not supply a recoverable license file. Review this distinction when accepting distribution.",
+    "files": [
+      {
+        "path": "licenses/recovered/npm-toggle-selection@1.0.6-LICENSE",
+        "sha256": "771e50e27b24269923639e8e0cc650e7187ffeab5726f6a6f47d9ea83865089d",
+        "source": "https://api.github.com/repos/sudodoki/toggle-selection/git/blobs/4a7395ee831dc1617bf5195dcb353c5bbd89afcd",
+        "repository": "sudodoki/toggle-selection",
+        "commit": "888650b271ee4937e2baff6a43bee744635601e3",
+        "original_path": "LICENSE"
+      }
+    ]
+  },
+  "go:github.com/alibabacloud-go/endpoint-util@v1.1.0": {
+    "declared_license": "Apache-2.0",
+    "files": [
+      {
+        "path": "licenses/recovered/endpoint-util-v1.1.0-README.md",
+        "sha256": "cb3e7c0a956c58fc5077e6e7385b216ddf8d1e6b13c24901f6d39bb78c99016e",
+        "source": "https://proxy.golang.org/github.com/alibabacloud-go/endpoint-util/@v/v1.1.0.zip"
+      },
+      {
+        "path": "licenses/Casdoor-Apache-2.0.txt",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "source": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "license_text": true
+      }
+    ]
+  },
+  "go:github.com/alibabacloud-go/tea-fileform@v1.1.1": {
+    "declared_license": "Apache-2.0",
+    "files": [
+      {
+        "path": "licenses/recovered/tea-fileform-v1.1.1-README.md",
+        "sha256": "9b0bca471332b29b637326fb96f7310043942e88e7551e64d1dbd1ba0dfd040d",
+        "source": "https://proxy.golang.org/github.com/alibabacloud-go/tea-fileform/@v/v1.1.1.zip"
+      },
+      {
+        "path": "licenses/Casdoor-Apache-2.0.txt",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "source": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "license_text": true
+      }
+    ]
+  },
+  "go:github.com/alibabacloud-go/tea-oss-sdk@v1.1.3": {
+    "declared_license": "Apache-2.0",
+    "files": [
+      {
+        "path": "licenses/recovered/tea-oss-sdk-v1.1.3-README.md",
+        "sha256": "d1560786b8eaef7f60b34d8e671bb1cc2d0b0731005081610f5a900f8fee9608",
+        "source": "https://proxy.golang.org/github.com/alibabacloud-go/tea-oss-sdk/@v/v1.1.3.zip"
+      },
+      {
+        "path": "licenses/Casdoor-Apache-2.0.txt",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "source": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "license_text": true
+      }
+    ]
+  },
+  "go:github.com/alibabacloud-go/tea-oss-utils@v1.1.0": {
+    "declared_license": "Apache-2.0",
+    "files": [
+      {
+        "path": "licenses/recovered/tea-oss-utils-v1.1.0-README.md",
+        "sha256": "6c4dcc604768532fa06f9835c9320cc9a7c77ea7ca16c8e7334fc6a3e47808cc",
+        "source": "https://proxy.golang.org/github.com/alibabacloud-go/tea-oss-utils/@v/v1.1.0.zip"
+      },
+      {
+        "path": "licenses/Casdoor-Apache-2.0.txt",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "source": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "license_text": true
+      }
+    ]
+  },
+  "go:github.com/alibabacloud-go/tea-utils@v1.3.6": {
+    "declared_license": "Apache-2.0",
+    "files": [
+      {
+        "path": "licenses/recovered/tea-utils-v1.3.6-README.md",
+        "sha256": "a86cd543c88643dc9cf8c073375d4e388b8aa1d9abbb9ec177e5912f39e14411",
+        "source": "https://proxy.golang.org/github.com/alibabacloud-go/tea-utils/@v/v1.3.6.zip"
+      },
+      {
+        "path": "licenses/Casdoor-Apache-2.0.txt",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "source": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "license_text": true
+      }
+    ]
+  },
+  "go:github.com/alibabacloud-go/darabonba-number@v1.0.4": {
+    "declared_license": "Apache-2.0",
+    "note": "The parent project README grants Apache-2.0 and its Teafile explicitly maps Go release v1.0.4. Go source byte comparison is recorded in distribution evidence; this evidence must be reviewed when accepting redistribution.",
+    "files": [
+      {
+        "path": "licenses/recovered/darabonba-number-v1.0.4-README.md",
+        "sha256": "a14b989e48e5c37f9ce8cd7a88438e584b08b5b254aa61be1ccbb267a76fd158",
+        "source": "https://raw.githubusercontent.com/aliyun/darabonba-number/c8465347e0da0bd9a0aec13a435f6e3a3fe9d832/README.md"
+      },
+      {
+        "path": "licenses/recovered/darabonba-number-v1.0.4-Teafile",
+        "sha256": "8267a4c03dc1c265e153682f3bd871f20e1cf3bd9fc9fac946a34c72adedb890",
+        "source": "https://raw.githubusercontent.com/aliyun/darabonba-number/c8465347e0da0bd9a0aec13a435f6e3a3fe9d832/Teafile"
+      },
+      {
+        "path": "licenses/Casdoor-Apache-2.0.txt",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "source": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+        "license_text": true
+      }
+    ]
+  },
+  "npm:format@0.2.2": {
+    "note": "The original release README contains the copyright and MIT grant. isarray includes full MIT terms there. For format the generic MIT text accompanies the original copyright notice; the author license webpage was unavailable. Review this evidence before distribution acceptance.",
+    "files": [
+      {
+        "path": "licenses/recovered/npm-format@0.2.2-README-LICENSE.md",
+        "sha256": "e078ab4217332db9ac446cdf23e932eabd21d6db7c239a6495df4d3802251f20",
+        "source": "https://api.github.com/repos/samsonjs/format/git/blobs/ed516e69cd7e2434697b3f3f8a889c99fad543ea",
+        "repository": "samsonjs/format",
+        "commit": "4f898096759776b7c84fa7a25b13c923dadfe46e",
+        "original_path": "Readme.md"
+      },
+      {
+        "path": "licenses/recovered/MIT-LICENSE-template.txt",
+        "sha256": "002c2696d92b5c8cf956c11072baa58eaf9f6ade995c031ea635c6a1ee342ad1",
+        "source": "https://api.github.com/licenses/mit"
+      }
+    ]
+  },
+  "npm:isarray@1.0.0": {
+    "note": "The original release README contains the copyright and MIT grant. isarray includes full MIT terms there. For format the generic MIT text accompanies the original copyright notice; the author license webpage was unavailable. Review this evidence before distribution acceptance.",
+    "files": [
+      {
+        "path": "licenses/recovered/npm-isarray@1.0.0-README-LICENSE.md",
+        "sha256": "ff138e683771b187f3629c383db72ee7d632009010a36d08e18e8d2a34222ec7",
+        "source": "https://api.github.com/repos/juliangruber/isarray/git/blobs/16d2c59c6195f9a1ac9af37cb9d75f1a6b85ab01",
+        "repository": "juliangruber/isarray",
+        "commit": "2a23a281f369e9ae06394c0fb4d2381355a6ba33",
+        "original_path": "README.md"
+      }
+    ]
+  }
+}

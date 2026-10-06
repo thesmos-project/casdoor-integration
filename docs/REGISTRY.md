@@ -28,12 +28,18 @@ registry token scoped to this image repository where the registry permits it.
 The registry must support OCI manifests, SBOM/provenance attestations and Cosign
 signatures, and be reachable with trusted HTTPS from the Actions runner.
 
-After production/publication acceptance is recorded, manually run **Actions →
-Publish accepted image → Run workflow**, selecting `main`. It validates acceptance,
+After the selected channel's acceptance is recorded, manually run **Actions →
+Publish integration image → Run workflow**, selecting `main` and a channel.
+`candidate` requires an RC version and distribution/provenance/runtime acceptance;
+its production label remains `false`. `stable` requires a non-RC version and
+every production acceptance gate. It validates acceptance,
 prepares exact source, reruns the container build and tests, publishes the version
-from `build.lock.json`, attaches SBOM/provenance, signs the immutable digest with
-GitHub OIDC, and verifies that signature. Pull and test the returned digest in the
-supported deployment before announcing it. There is no automatic upstream PR,
+from `build.lock.json`, checks actual image notices/sources and the configurable
+runtime before pushing, attaches SBOM/provenance, signs the immutable digest with
+GitHub OIDC, verifies that signature, then pulls and smoke tests that digest.
+Test the returned digest in the supported deployment before announcing it.
+A failed post-push check leaves an unaccepted artifact that must not be advertised.
+There is no automatic upstream PR,
 registry publishing on push, or `latest` tag.
 
 Credentials go only to the registry login action. They are not build arguments.

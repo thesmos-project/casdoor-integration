@@ -11,6 +11,7 @@ The source preparer verifies them before applying any patch.
 | Frontend candidate | Runtime dependency updates and official SheetJS distribution |
 | Build chain candidate | Frontend build dependency updates |
 | Claim configuration candidate | Validate custom claim configuration before persistence and restrict partial application writes to selected fields |
+| LDAP licence candidate | Pin the LDAP message module to the author's MIT release; its parent is the previously pinned revision and only LICENSE changes |
 
 These are candidate changes, with regression tests included in the patches.
 They are not upstream-supported features or a production approval.

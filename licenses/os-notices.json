@@ -1,0 +1,25 @@
+{
+  "note": "Standard license texts accompany the exact source archives and their original copyright notices. Package licenses and source commits are recorded in os.lock.json; these templates do not replace upstream copyright grants.",
+  "texts": {
+    "gpl-2.0": {
+      "path": "licenses/recovered/GPL-2.0-LICENSE-template.txt",
+      "source": "https://api.github.com/licenses/gpl-2.0",
+      "sha256": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643"
+    },
+    "mpl-2.0": {
+      "path": "licenses/recovered/MPL-2.0-LICENSE-template.txt",
+      "source": "https://api.github.com/licenses/mpl-2.0",
+      "sha256": "3f3d9e0024b1921b067d6f7f88deb4a60cbe7a78e76c64e3f1d7fc3b779b9d04"
+    },
+    "bsd-2-clause": {
+      "path": "licenses/recovered/BSD-2-CLAUSE-LICENSE-template.txt",
+      "source": "https://api.github.com/licenses/bsd-2-clause",
+      "sha256": "8116e572e44a918ea5f1b589024fbc673ccddde7a53b3bf95b4eafab0fdcd41e"
+    },
+    "zlib": {
+      "path": "licenses/recovered/ZLIB-LICENSE-template.txt",
+      "source": "https://api.github.com/licenses/zlib",
+      "sha256": "4d9237e943cff030cdce71622c6f8b74cd06e2b30b7e5339b394a586d6d0bc7e"
+    }
+  }
+}

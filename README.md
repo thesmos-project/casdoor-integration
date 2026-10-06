@@ -6,7 +6,7 @@ This is an independently maintained integration project, without upstream endors
 
 ## Status
 
-Source candidate: five attributed patch layers and a complete backend/frontend
+Source candidate: six attributed patch layers and a complete backend/frontend
 container builder are available for evaluation. No registry image or supported
 production release has been published. Production acceptance remains in progress.
 `upstream.lock.json` records the exact upstream revision and ordered patch checksums.
@@ -27,10 +27,13 @@ history, credentials, customer data and commercial source are excluded.
 
 ## Planned container distribution
 
-A registry and repository path will be selected by the project owner. Registry
-credentials belong in GitHub Actions secrets, never source files or image layers.
-The **Publish accepted image** workflow is manual and currently blocked by
-`release-policy.json`. See [registry setup](docs/REGISTRY.md).
+Registry settings belong in GitHub Actions variables and secrets, never source
+files or image layers. **Publish integration image** is manual, with separate
+candidate and stable channels. Candidate distribution has scoped acceptance in `release-policy.json`; stable
+publishing remains blocked. The publication job requires the configured owner
+review in the `release` environment.
+Candidates require reviewed distribution, provenance and runtime evidence; stable
+releases additionally require full production acceptance. See [registry setup](docs/REGISTRY.md).
 
 The intended release includes a versioned image, matching build source, upstream
 revision, patch checksums, dependency licences, an SBOM and signed provenance.
@@ -39,7 +42,9 @@ recipe; Kubernetes support requires separate acceptance.
 
 ## Build the candidate
 
-Requires Git, Python 3 and Docker with Buildx. The current target is Linux amd64.
+Requires Git, Python 3, the authenticated GitHub CLI and Docker with Buildx.
+The GitHub CLI reads public Alpine build recipes; it never creates upstream PRs.
+The current target is Linux amd64.
 
 ```sh
 python3 scripts/validate-project.py
@@ -47,15 +52,19 @@ python3 scripts/build-image.py
 ```
 
 This fetches the pinned upstream revision, verifies its tag and every patch
-checksum, applies all five layers, runs selected Go regressions under the race
+checksum, applies all six layers, runs selected Go regressions under the race
 detector, typechecks the frontend, and compiles both components. Go, Node,
-Yarn and runtime base versions are recorded in `build.lock.json`.
+Yarn and runtime base versions are recorded in `build.lock.json`. `os.lock.json`
+records the exact installed system packages and Alpine source commits. The builder
+retains checked backend/frontend/font/Swagger notices and corresponding system
+package source archives in `/licenses`. See [distribution inventory](docs/DISTRIBUTION.md).
 
 The output is the local image `casdoor-integration:candidate`. Prepared source,
 logs and build metadata belong in ignored `.local/`. A changed existing source
 export is refused; move it aside before preparing a different candidate.
 This controls source/build inputs; it does not promise byte-identical images
-while runtime package repositories can change.
+while runtime package repositories can change. Distribution checks reject an
+image whose installed system packages differ from the lock.
 
 See [patch details](docs/PATCHES.md), [local component recipe](recipes/README.md)
 and [remaining release requirements](docs/RELEASE-STATUS.md).

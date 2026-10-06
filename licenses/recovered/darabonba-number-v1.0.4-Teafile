@@ -1,0 +1,56 @@
+{
+	"scope": "darabonba",
+	"name": "Number",
+	"version": "0.0.9",
+	"main": "./main.tea",
+	"releases": {
+		"go": "github.com/alibabacloud-go/darabonba-number/client:v1.0.4",
+		"ts": "@darabonba/number:^1.1.0",
+		"csharp": "AlibabaCloud.DarabonbaNumber:1.0.3",
+		"java": "com.aliyun:darabonba-number:0.0.3",
+		"php": "alibabacloud/darabonba-number:^0.1.0",
+		"python": "alibabacloud_darabonba_number:0.0.4",
+		"swift": "alibabacloud-sdk-swift/darabonba-number:1.0.0"
+	},
+	"java": {
+		"package": "com.aliyun.darabonbanumber"
+	},
+	"csharp": {
+		"namespace": "AlibabaCloud.DarabonbaNumber",
+		"className": "NumberUtil",
+		"packageInfo": {
+			"name": "numberUtil"
+		}
+	},
+	"php": {
+		"package": "AlibabaCloud.Darabonba.Number",
+		"clientName": "NumberUtil",
+		"packageInfo": {
+			"name": "alibabacloud/darabonba-number",
+			"desc": "Alibaba Cloud Darabonba Number Library for PHP",
+			"github": "https://github.com/aliyun/darabonba-number"
+		}
+	},
+	"python": {
+		"package": "alibabacloud_darabonba_number",
+		"clientName": "client"
+	},
+	"cpp": {
+		"packageInfo": {
+			"git": {
+				"scope": "alibabacloud-sdk-cpp",
+				"project": "dara-number"
+			}
+		}
+	},
+	"swift": {
+		"clientName": "Client",
+		"packageInfo": {
+			"name": "DarabonbaNumber",
+			"desc": "Alibaba Cloud Darabonba Number for Swift",
+			"github": "https://github.com/alibabacloud-sdk-swift/darabonba-number",
+			"author": "Alibaba Cloud SDK",
+			"email": "sdk-team@alibabacloud.com"
+		}
+	}
+}

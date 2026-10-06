@@ -28,6 +28,10 @@
       "path": "patches/casdoor-claim-configuration-candidate.patch",
       "sha256": "ebaaec511b8f6d68db1ffb507078a00fbf06f1bf604b17d7b26a3ddab7cadcaa",
       "purpose": "Validate claim configuration and restrict partial application writes."
+    },
+    {
+      "path": "patches/casdoor-ldap-license-candidate.patch",
+      "sha256": "bf102ec21b24237b83f46b0ee8a872ce11be4aa7a228f87b56fa00e4cf04182d"
     }
   ]
 }

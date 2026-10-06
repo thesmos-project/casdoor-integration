@@ -18,6 +18,7 @@ def main():
     if options.reference:
         prepare += ["--reference", str(options.reference)]
     subprocess.run(prepare, check=True)
+    subprocess.run([sys.executable, str(ROOT / "scripts/os-source-kit.py")], check=True)
     lock = json.loads((ROOT / "build.lock.json").read_text())
     upstream = json.loads((ROOT / "upstream.lock.json").read_text())
     command = ["docker", "buildx", "build", "--load", "--platform", lock["platform"], "--tag", options.tag]

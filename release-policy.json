@@ -9,5 +9,16 @@
     "deployment_and_capacity_acceptance": false,
     "independent_review": false
   },
-  "note": "Source candidate only. Publishing remains blocked until every acceptance gate is recorded as passed."
+  "candidate": {
+    "publication_approved": true,
+    "required_acceptance": {
+      "distribution_review": true,
+      "source_and_patch_provenance": true,
+      "build_and_runtime_smoke": true
+    },
+    "reviewed_by": "Codex: scoped local maintainer distribution review; independent production review pending",
+    "acceptance_evidence": "docs/CANDIDATE-ACCEPTANCE.md",
+    "accepted_build_inputs_sha256": "04e168b359606f8e99f22dcaac5d178354928c6d6f59dd523e99db714b1a27de"
+  },
+  "note": "Candidate accepted for evaluation distribution with fresh CI checks and release-environment owner review. Production and stable publication remain unapproved."
 }

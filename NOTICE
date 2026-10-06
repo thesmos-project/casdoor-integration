@@ -15,6 +15,16 @@ server configuration is derived from upstream and marked as modified.
 
 The ACME integration uses go-acme/lego (MIT); its licence is in licenses/Lego-MIT.txt.
 The frontend uses SheetJS Community Edition (Apache-2.0); its licence is in
-licenses/SheetJS-Apache-2.0.txt. These notices are not a complete dependency or
-bundled-asset licence inventory. Registry publication remains blocked until that
-inventory and production acceptance are complete.
+licenses/SheetJS-Apache-2.0.txt. The image carries the dependency, font, Swagger
+and system package notice inventories in /licenses/dependencies. Recovered
+license evidence is recorded in licenses/overrides.json. Source archives for
+covered MPL Go modules and the installed system packages accompany the image.
+
+This software uses Freetype-Go under the FreeType License, and is based in part
+on the work of the FreeType Team (https://www.freetype.org/). The original
+FreeType licence, copyright and accompanying notices are retained in the image.
+
+The LDAP message dependency is pinned to its author's MIT release commit.
+This changes its licence from the older dependency revision, with identical
+non-licence source files. It does not claim authorship of that dependency.
+Candidate distribution and stable production acceptance are separate records.
