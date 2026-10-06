@@ -18,7 +18,7 @@
     },
     "reviewed_by": "Codex: scoped local maintainer distribution review; independent production review pending",
     "acceptance_evidence": "docs/VALIDATION.md",
-    "accepted_build_inputs_sha256": "286486c42ebf760f5ecf83033bfe18de05555adf1067381548c1526e57fc0d7d"
+    "accepted_build_inputs_sha256": "8d283c0664a29c04e6851d59285d0d1436ca7740fd5cfd50017b814bc0c68f35"
   },
   "note": "Candidate accepted for evaluation distribution with fresh CI checks and release-environment owner review. Production and stable publication remain unapproved."
 }

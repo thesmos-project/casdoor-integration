@@ -1,14 +1,20 @@
 # Registry publishing and image verification
 
-No verified registry image is available yet. This guide describes the publishing
-workflow and verification commands to use with a successfully published digest.
+The current evaluation image is `registry.thesmos.dev/thesmos/casdoor@sha256:afe7e0c8ece067a9b4ef4cf38e8e9cf108c5b7b4b96b97f335aa005b338f60d4`.
+This guide describes how to verify it and how maintainers publish new versions.
 Local builds do not require registry credentials.
 
 ## Verify a published image
 
-Use the complete image repository and immutable `sha256:` digest recorded in
-successful publication evidence. Substitute those values for `IMAGE_REPOSITORY`
-and `IMAGE_DIGEST` below:
+Use the complete image repository and immutable `sha256:` digest. For the current
+evaluation image, set:
+
+```sh
+IMAGE_REPOSITORY=registry.thesmos.dev/thesmos/casdoor
+IMAGE_afe7e0c8ece067a9b4ef4cf38e8e9cf108c5b7b4b96b97f335aa005b338f60d4=sha256:afe7e0c8ece067a9b4ef4cf38e8e9cf108c5b7b4b96b97f335aa005b338f60d4
+```
+
+Then run:
 
 ```sh
 cosign verify \

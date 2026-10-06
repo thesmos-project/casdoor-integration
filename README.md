@@ -58,8 +58,14 @@ build keeps these features configurable through Casdoor's administrator UI/API.
 ## Try the current version
 
 Current source: **`v4.15.0-thesmos.1-rc.1`**, based on Casdoor **`v4.15.0`**,
-targeting **`linux/amd64`**. The source, patches, builder and local recipe are
-available. Registry publication is pending.
+targeting **`linux/amd64`**. The signed evaluation image is published at:
+
+```text
+registry.thesmos.dev/thesmos/casdoor@sha256:afe7e0c8ece067a9b4ef4cf38e8e9cf108c5b7b4b96b97f335aa005b338f60d4
+```
+
+Pull it by this digest; the tag `v4.15.0-thesmos.1-rc.1` refers to the same image.
+[Verify its signature and SBOM](docs/REGISTRY.md#verify-a-published-image) before use.
 
 This is an evaluation candidate. Use a disposable database and keep access on
 loopback while [production requirements](docs/RELEASE-STATUS.md) remain open.
