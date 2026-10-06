@@ -17,8 +17,8 @@
       "build_and_runtime_smoke": true
     },
     "reviewed_by": "Codex: scoped local maintainer distribution review; independent production review pending",
-    "acceptance_evidence": "docs/CANDIDATE-ACCEPTANCE.md",
-    "accepted_build_inputs_sha256": "1d7beaf94d2785b1f8d01bf55d8a231579b1ef8730e0a6a6e236fabf07470867"
+    "acceptance_evidence": "docs/VALIDATION.md",
+    "accepted_build_inputs_sha256": "2c0f1979b80e0ee588b175f7e10156e8941c83db61d02a0db67a6dfa4b564ef7"
   },
   "note": "Candidate accepted for evaluation distribution with fresh CI checks and release-environment owner review. Production and stable publication remain unapproved."
 }

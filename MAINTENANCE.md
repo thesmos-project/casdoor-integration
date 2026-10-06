@@ -1,67 +1,72 @@
-# Maintenance and release policy
+# Maintaining the integration
 
 ## Upstream alignment
 
-1. Pin each candidate to an exact Casdoor commit and record its release tag.
-2. Maintain an ordered patch series with checksums and a reason for each patch.
-3. Evaluate upstream releases and security fixes in an update branch here.
-4. Resolve conflicts explicitly. A clean patch application alone is insufficient.
-5. Verify protocol behavior, tenant boundaries, supported customization,
-   database migrations, upgrades, key rotation and recovery before promotion.
-6. Remove a patch when the equivalent upstream change has been verified.
+1. Pin a Casdoor release tag and exact commit in `upstream.lock.json`.
+2. Keep the patches ordered with checksums and document each reason in
+   [PATCHES.md](docs/PATCHES.md).
+3. Evaluate upstream updates in a branch of this repository. Resolve patch
+   conflicts and review behavior even when the series applies cleanly.
+4. Check protocol behavior, tenant boundaries, claim/theme configuration,
+   database migrations, upgrades, key rotation and recovery.
+5. Remove a patch once its upstream equivalent has been verified.
 
-Release metadata must connect the source revision, patch series, toolchain,
-frontend, dependency inventory and final image digest. The published builder must
-reproduce every accepted patch layer, including the frontend. A GitHub fork can
-be introduced later; it does not replace update review or integration tests.
+Source provenance must connect the Casdoor revision, patch series, toolchain,
+dependency inventory and final image digest. Contributors may submit patches
+here under the repository's licence while preserving upstream notices.
 
-## Upstream interaction
+## Upstream contributions
 
-All upstream contributions are manual and require an explicit maintainer decision.
-No automation may open issues or PRs, post comments, push branches, or submit
-security findings to the original Casdoor repository. Any future update bot may
-propose changes only in this integration repository. Do not automatically merge
-or release those changes.
+Contributions to the original Casdoor repository require an explicit manual
+maintainer decision. Automation must not open upstream issues or pull requests,
+post comments, push branches or submit security reports. Update automation may
+propose changes in this integration repository but must not automatically merge
+or release them. Security-sensitive changes require publication review and,
+where applicable, coordinated disclosure.
 
-Security findings and unreleased security-sensitive patches require publication
-review and, where applicable, coordinated disclosure before public inclusion.
+## Release procedure
 
-## Registry setup
+1. Update source/build locks, patch documentation and version limitations.
+2. Build and run the relevant checks. Review source provenance, dependency
+   notices and sources, and the runtime reports.
+3. Record the selected channel's acceptance in `release-policy.json`, including
+   a truthful reviewer, evidence and the exact reviewed input fingerprint:
 
-Once the complete build is accepted, the owner supplies:
+   ```sh
+   python3 scripts/validate-project.py --print-inputs-sha256
+   ```
 
-- `REGISTRY_URL`: registry host, optionally including its port, without a URL scheme.
-- `REGISTRY_IMAGE`: an image name, namespace/name, or full image repository path.
-  A relative name is prefixed with `REGISTRY_URL`.
-- `REGISTRY_USERNAME`: registry login identity, stored as an Actions secret.
-- `REGISTRY_PASSWORD`: registry token or password, stored as an Actions secret.
+   A fingerprint identifies inputs; it does not replace review. Changed inputs
+   require renewed acceptance. Candidate distribution requires its three gates;
+   stable publication requires every production gate and production approval.
+4. Validate the selected channel:
 
-Use Actions variables for the two non-secret values and Actions secrets for the
-credentials. Organization settings can be shared with this repository; the release
-environment can override them when needed. Prefer a dedicated account/token with the minimum required access.
-If the registry supports federation, short-lived credentials are preferable.
-Never copy credentials into build arguments, Dockerfiles, generated images or
-public build logs. Pull-request builds must not receive publishing credentials.
+   ```sh
+   python3 scripts/validate-project.py --candidate
+   # For an accepted stable version, use --release instead.
+   ```
 
-The publishing workflow requires manual dispatch and uses the GitHub environment
-named `release`, which must require maintainer review and be restricted to `main`. Registry credentials do not by
-themselves approve a release. Publish only an accepted source revision and retain
-its digest, SBOM, provenance and release notes. The immutable digest is the
-supported deployment reference; a mutable tag is only a convenience.
+5. Require successful CI for the source revision. Configure the
+   [registry settings](docs/REGISTRY.md) and manually dispatch publication from
+   `main`. Preserve the `release` environment's required maintainer review,
+   restriction to `main` and disabled administrator bypass.
+6. Announce a digest only after publication, signature/attestation verification
+   and pulled-image runtime checks succeed. Retain matching source, notices,
+   SBOM/provenance and release notes. Candidate availability does not establish
+   production support.
 
-## Customization contract
+RC versions use the candidate channel and retain production approval `false`.
+Stable versions have no RC suffix and require full production acceptance.
+[The release status](docs/RELEASE-STATUS.md) describes the current version's limits.
 
-Keep deployment-specific users, passwords, domains, signing keys and themes out
-of the distributable image. Prefer upstream UI/API configuration for ordinary
-branding. Initial provisioning must not reset later administrator changes.
-Custom HTML and other powerful settings require trusted administrator access.
-Persistent files and object storage need acceptance with read-only runtime
-controls. Test customization persistence during restart, upgrade and recovery.
+## Configuration and contributions
 
-## Publication boundary
+Use Casdoor UI/API settings for supported branding and identity configuration.
+Keep deployment-specific users, secrets, domains and signing keys out of the
+image. Changes must preserve administrator settings across restart, upgrade and
+recovery; persistent storage must work with the runtime restrictions.
 
-Publish reviewed Casdoor patches, original integration code, builders and
-sanitized recipes. Do not copy the private evaluation repository wholesale.
-Commercial Thesmos source or images, credentials, keys, fixture dumps, private
-reports and deployment-specific identifiers are excluded. An initial scaffold
-or successful local test does not establish production readiness.
+Publish implementation, usable instructions, patch rationale and reproducible
+validation scope. Keep investigation journals, deployment troubleshooting,
+credentials, fixture dumps and commercial source out of public documentation.
+Retain original third-party licence evidence even when it is embedded in a README.

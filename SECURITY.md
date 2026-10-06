@@ -1,7 +1,8 @@
 # Security
 
-This repository contains a source candidate and evaluation builder. It has no
-supported production releases or published registry images.
+`v4.15.0-thesmos.1-rc.1` is an evaluation candidate. There are no supported
+production releases or verified published registry images. See
+[version limitations](docs/RELEASE-STATUS.md), including initial administrator setup.
 
 Do not disclose credentials or suspected vulnerabilities through public issues.
 For Casdoor vulnerabilities, follow the original project's
@@ -10,5 +11,5 @@ For Casdoor vulnerabilities, follow the original project's
 For integration-specific findings, use **Security → Report a vulnerability**
 in this repository. GitHub private vulnerability reporting is enabled.
 
-No upstream security report is submitted automatically. Disclosure and release
-decisions require explicit maintainer review.
+Upstream security submissions are manual. Disclosure and release decisions
+require maintainer review.

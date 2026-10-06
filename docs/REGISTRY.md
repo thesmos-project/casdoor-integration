@@ -1,113 +1,88 @@
-# Registry setup
+# Registry publishing and image verification
 
-The project owner can configure the destination without changing the builder.
-No registry credentials are needed to inspect patches or build the image locally.
+No verified registry image is available yet. This guide describes the publishing
+workflow and verification commands to use with a successfully published digest.
+Local builds do not require registry credentials.
 
-Organization and repository settings are supported; there is no need to copy
-organization credentials into repository secrets. Configure these names:
+## Verify a published image
 
-| Name | Kind | Value |
-| --- | --- | --- |
-| `REGISTRY_URL` | Actions variable | Registry hostname, optionally with port; no `https://` prefix |
-| `REGISTRY_IMAGE` | Actions variable | Image name such as `casdoor`, namespace/name, or full repository path; no tag |
-| `PUBLIC_REGISTRY_URL` | Optional Actions variable | Anonymous consumer mirror hostname; uses the same repository path |
-| `REGISTRY_USERNAME` | Actions secret | Registry login identity |
-| `REGISTRY_PASSWORD` | Actions secret | Registry token or password |
-
-For example, a repository image name of `casdoor` is prefixed with your configured
-registry hostname. Organization settings must grant this repository access. A
-`release` environment setting can override the inherited organization/repository
-value; leave it unset when sharing organization credentials.
-
-Run **Actions → Check registry access → Run workflow** on `main` to verify
-organization/repository settings and registry login. It does not push an image or
-publish an image manifest. For a Basic-auth registry it also creates an empty,
-authenticated blob upload and immediately cancels that same upload. This checks
-upload access, not acceptance of every image/attestation manifest type. The check
-refuses redirects and unexpected cancellation locations. Bearer-token registries
-need a separate permission-check implementation. It does not use any `release`
-environment overrides.
-
-A registry that permits anonymous reads can report a successful Docker login
-without proving the supplied account can upload. Check the account's push rights
-for the normalized `REGISTRY_IMAGE` path. A failed upload probe occurs before the
-publication workflow spends time building the image.
-
-## Separate upload origin and public mirror
-
-When a public registry is a read-only mirror, upload to the authenticated origin.
-The repository's Zot deployment uses these repository-level variable overrides:
-
-| Variable | Value |
-| --- | --- |
-| `REGISTRY_URL` | `customers.thesmos.dev` |
-| `REGISTRY_IMAGE` | `thesmos/casdoor` |
-| `PUBLIC_REGISTRY_URL` | `registry.thesmos.dev` |
-
-The organization-wide settings are retained. The inherited credentials must
-identify the origin's authorized CI account. The image path matches the public
-mirror's `thesmos/**` sync selection. Do not upload to the read-only mirror or
-enable anonymous writes there.
-
-In the mirror configuration, set `preserveDigest` on the upstream sync entry:
-
-```json
-{
-  "urls": ["http://zot:5000"],
-  "tlsVerify": false,
-  "onDemand": true,
-  "pollInterval": "1h",
-  "preserveDigest": true,
-  "content": [{ "prefix": "thesmos/**" }]
-}
-```
-
-Keep the mirror's existing `http.compat: ["docker2s2"]`, credential-file setting
-and private upstream connectivity. This fragment replaces only one registry
-entry; it is not a complete Zot configuration. Verify that the deployed Zot
-version supports these settings before applying them.
-[Zot's mirroring guide](https://zotregistry.dev/latest/articles/mirroring/)
-documents digest/signature/referrer preservation.
-
-After signing at the origin, the publication workflow uses an empty Docker
-credential configuration to pull the mirror tag and exact origin digest, verify
-the image signature and SPDX attestation, and test the pulled image. A missing
-digest or signed artifact fails publication acceptance. The final consumer
-reference uses the public mirror only after those checks succeed.
-
-The project environment is configured to require owner review, restrict deployment
-to `main`, and disable administrator bypass. Preserve these protections. Use a
-registry token scoped to this image repository where the registry permits it.
-The registry must support OCI manifests, SBOM/provenance attestations and Cosign
-signatures, and be reachable with trusted HTTPS from the Actions runner.
-
-After the selected channel's acceptance is recorded, manually run **Actions →
-Publish integration image → Run workflow**, selecting `main` and a channel.
-`candidate` requires an RC version and distribution/provenance/runtime acceptance;
-its production label remains `false`. `stable` requires a non-RC version and
-every production acceptance gate. It validates acceptance,
-prepares exact source, reruns the container build and tests, publishes the version
-from `build.lock.json`, checks actual image notices/sources and the configurable
-runtime before pushing, attaches SBOM/provenance, signs the immutable digest with
-GitHub OIDC, verifies that signature, then pulls and smoke tests that digest.
-Test the returned digest in the supported deployment before announcing it.
-A failed post-push check leaves an unaccepted artifact that must not be advertised.
-There is no automatic upstream PR,
-registry publishing on push, or `latest` tag.
-
-Credentials go only to the registry login action and the direct upload check.
-They are not build arguments, and the upload check does not print their values.
-The workflow does not need permission to write to the original Casdoor repository.
-
-To verify a released image, set `IMAGE_REPOSITORY` to its complete registry path
-and use the full digest from its release evidence:
+Use the complete image repository and immutable `sha256:` digest recorded in
+successful publication evidence. Substitute those values for `IMAGE_REPOSITORY`
+and `IMAGE_DIGEST` below:
 
 ```sh
 cosign verify \
   --certificate-identity 'https://github.com/thesmos-project/casdoor-integration/.github/workflows/publish.yml@refs/heads/main' \
   --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
   "$IMAGE_REPOSITORY@$IMAGE_DIGEST"
+
+cosign verify-attestation --type spdxjson \
+  --certificate-identity 'https://github.com/thesmos-project/casdoor-integration/.github/workflows/publish.yml@refs/heads/main' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  "$IMAGE_REPOSITORY@$IMAGE_DIGEST"
 ```
 
-A verified signature identifies the publishing workflow. It does not by itself
-establish production security or protocol compatibility.
+A verified signature identifies the publishing workflow. Check the source
+revision, release channel and [release limitations](RELEASE-STATUS.md) as well;
+a signed candidate is still an evaluation build.
+
+## Maintainer settings
+
+Configure GitHub Actions variables and secrets:
+
+| Name | Kind | Value |
+| --- | --- | --- |
+| `REGISTRY_URL` | Variable | Upload registry hostname, optionally with port; no URL scheme. |
+| `REGISTRY_IMAGE` | Variable | Image name, namespace/name or full repository path on that host; no tag. |
+| `PUBLIC_REGISTRY_URL` | Optional variable | Anonymous read-only mirror hostname, using the same repository path. |
+| `REGISTRY_USERNAME` | Secret | Account authorized to upload to that image repository. |
+| `REGISTRY_PASSWORD` | Secret | Registry token or password. |
+
+Organization settings must grant this repository access. Repository and
+`release` environment settings can override inherited values. Keep credentials
+out of source files, build arguments, image layers and public logs. Use a
+repository-scoped registry account where supported.
+
+Run **Actions → Check registry access → Run workflow** on `main` to check settings
+and credentials. For Basic-auth registries it creates an empty authenticated blob
+upload and immediately cancels that same upload. It publishes no image manifest.
+A successful Docker login alone does not prove write access when anonymous reads
+are enabled. The probe rejects redirects and unexpected cancellation locations;
+Bearer-token registries require a separate upload-probe implementation.
+The standalone check uses organization/repository settings, not release-environment
+overrides.
+
+The registry must support the image manifests, SBOM/provenance attestations and
+Cosign signatures, and be reachable over trusted HTTPS from the runner. The
+upload probe does not establish support for every manifest/attestation type.
+
+## Separate upload origin and public mirror
+
+Upload and sign at the authenticated origin. Set `PUBLIC_REGISTRY_URL` only when
+consumers should pull anonymously through a separate mirror. The repository path
+must match the mirror's synchronization selection.
+
+For Zot mirrors, configure `preserveDigest: true` on the matching upstream sync
+entry and retain `http.compat: ["docker2s2"]`. The
+[Zot mirroring guide](https://zotregistry.dev/latest/articles/mirroring/) documents
+digest, signature and referrer preservation. Configure upstream connectivity and
+credentials for your deployment and confirm support in its Zot version.
+
+The publisher signs at the origin, then uses an empty Docker credential
+configuration to pull the public tag and exact origin digest. It verifies both
+the image signature and SPDX attestation and runs the smoke test through the
+mirror. It advertises the public reference only after all checks pass.
+
+## Publish a version
+
+Follow [the release procedure](../MAINTENANCE.md#release-procedure). Run
+**Actions → Publish integration image → Run workflow** on `main` with the accepted
+`candidate` or `stable` channel, then obtain the required `release` environment
+review. Candidate publishing requires an RC version; stable publishing requires
+a non-RC version and full production acceptance.
+
+The workflow builds/tests the image, checks its notices and runtime, refuses an
+existing version tag, pushes, signs and verifies the digest, and tests the pulled
+artifact. A failed post-push step leaves an unaccepted artifact that must not be
+advertised as verified. The workflow publishes no `latest` tag and does not run
+automatically on source pushes.
