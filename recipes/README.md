@@ -47,7 +47,7 @@ evaluation image instead of a local build, set `CASDOOR_IMAGE` to its digest:
 export CASDOOR_IMAGE=registry.thesmos.dev/thesmos/casdoor@sha256:afe7e0c8ece067a9b4ef4cf38e8e9cf108c5b7b4b96b97f335aa005b338f60d4
 ```
 
- `CASDOOR_PORT` changes the host port; update the configured origin to
+`CASDOOR_PORT` changes the host port; update the configured origin to
 match. The current default image is the locally built `casdoor-integration:candidate`.
 
 ## Configuration and storage
