@@ -43,6 +43,37 @@ index caa7f94..a5634de 100644
  	app, err := GetApplicationByClientId(application.ClientId)
  	if err != nil {
  		return false, err
+diff --git a/object/init_data.go b/object/init_data.go
+index cf6cf2e..e0915db 100644
+--- a/object/init_data.go
++++ b/object/init_data.go
+@@ -1,4 +1,5 @@
+ // Copyright 2022 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -15,6 +16,8 @@
+ package object
+ 
+ import (
++	"fmt"
++
+ 	"github.com/casdoor/casdoor/conf"
+ 	"github.com/casdoor/casdoor/util"
+ )
+@@ -326,6 +329,11 @@ func initDefinedApplication(application *Application) {
+ 		if initDataNewOnly {
+ 			return
+ 		}
++		// Validate before replacing, so invalid initialization data stops startup
++		// without deleting the stored application.
++		if err := validateCustomClaimConfiguration(application); err != nil {
++			panic(fmt.Errorf("initialization application %s: %w", application.GetId(), err))
++		}
+ 		affected, err := deleteApplication(application)
+ 		if err != nil {
+ 			panic(err)
 diff --git a/object/thesmos_claim_configuration.go b/object/thesmos_claim_configuration.go
 new file mode 100644
 index 0000000..0a6227b
@@ -259,10 +290,10 @@ index 0000000..0a6227b
 +}
 diff --git a/object/thesmos_claim_configuration_test.go b/object/thesmos_claim_configuration_test.go
 new file mode 100644
-index 0000000..9b352ce
+index 0000000..68f6125
 --- /dev/null
 +++ b/object/thesmos_claim_configuration_test.go
-@@ -0,0 +1,217 @@
+@@ -0,0 +1,249 @@
 +// Copyright 2026 The Thesmos integration contributors.
 +//
 +// Licensed under the Apache License, Version 2.0 (the "License");
@@ -478,6 +509,38 @@ index 0000000..9b352ce
 +	found, err = engine.Where("owner=? AND name=?", "admin", "existing").Get(&stored)
 +	if err != nil || !found || len(stored.TokenAttributes) != 0 || !reflect.DeepEqual(stored.TokenFields, existing.TokenFields) {
 +		t.Fatal("partial clear did not preserve fields and clear attributes")
++	}
++}
++
++func TestEvaluationInvalidInitDataKeepsStoredApplication(t *testing.T) {
++	engine, err := xorm.NewEngine("sqlite", t.TempDir()+"/init.sqlite")
++	if err != nil {
++		t.Fatal(err)
++	}
++	old, oldNewOnly := ormer, initDataNewOnly
++	ormer, initDataNewOnly = &Ormer{Engine: engine}, false
++	t.Cleanup(func() { ormer, initDataNewOnly = old, oldNewOnly; engine.Close() })
++	if err := engine.Sync2(&Application{}, &Organization{}, &Provider{}); err != nil {
++		t.Fatal(err)
++	}
++	existing := &Application{Owner: "admin", Name: "client", Organization: "tenant", ClientId: "client", DisplayName: "Stored"}
++	if _, err := engine.Insert(existing); err != nil {
++		t.Fatal(err)
++	}
++	replacement := *existing
++	replacement.DisplayName = "Replacement"
++	replacement.TokenAttributes = []*JwtItem{{Name: "roles", Category: "Static Value", Type: "Array", Value: "reader"}}
++	func() {
++		defer func() {
++			if recover() == nil {
++				t.Fatal("invalid initialization data did not stop startup")
++			}
++		}()
++		initDefinedApplication(&replacement)
++	}()
++	var stored Application
++	if found, err := engine.Where("owner=? AND name=?", "admin", "client").Get(&stored); err != nil || !found || stored.DisplayName != "Stored" {
++		t.Fatal("invalid initialization data deleted or replaced the stored application")
 +	}
 +}
 diff --git a/object/token_jwt.go b/object/token_jwt.go

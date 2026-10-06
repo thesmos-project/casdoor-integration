@@ -59,7 +59,8 @@ Saving an application now rejects claims Casdoor could not read back, such as
 role names under `roles`. Rename such claims before editing an affected
 application. An initialization file is validated the same way: with
 `initDataNewOnly=false` Casdoor replaces each defined application through the
-validated save path, so an invalid claim in that file stops startup.
+validated save path, so an invalid claim in that file stops startup. The
+stored application is kept until the file is corrected.
 SCIM `PUT` requests no longer clear administrator status, MFA,
 provider links, groups or properties, and leave a disabled account disabled
 unless they set `active`.

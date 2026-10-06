@@ -26,7 +26,7 @@
     },
     {
       "path": "patches/casdoor-claim-configuration-candidate.patch",
-      "sha256": "060f6bead8d9f1ffb369befc5b35b25da0be45bd9b44667396a31482fecc0b0e",
+      "sha256": "ebee4dc53db46f7bd19fc9a4a039b6257f6883118eaaed55641a0a5a8843cc85",
       "purpose": "Validate claim configuration and restrict partial application writes."
     },
     {
