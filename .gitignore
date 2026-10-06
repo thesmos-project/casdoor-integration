@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+.local/
+upstream/
+data/
+*.key
+*.pem
+*.p12
+*.pfx
+*.db
+*.db-shm
+*.db-wal

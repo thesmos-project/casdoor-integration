@@ -1,0 +1,11 @@
+Casdoor integration for Thesmos
+Copyright 2026 The Thesmos integration contributors.
+
+Casdoor is developed by the Casdoor project and its contributors.
+Original project: https://github.com/casdoor/casdoor
+Casdoor is licensed under Apache License 2.0.
+
+This repository is an independently maintained integration project. It does not
+claim authorship of Casdoor or imply endorsement by its developers. No Casdoor
+source or binary is included in this initial scaffold. Future distributions must
+preserve applicable upstream and third-party licence and attribution notices.
