@@ -1,89 +1,88 @@
-# Why this version patches Casdoor
+# What the Casdoor patches bring
 
-This version builds Casdoor `v4.15.0` at commit
-`2301694036cbdcf932b3b1cbef02fb61d9820429`. Casdoor's original authorship and
-copyright headers are preserved. [The source lock](../upstream.lock.json) lists
-the six patches in application order with SHA-256 checksums.
+The patches help Casdoor work with Thesmos for sign-in, identity provisioning
+and application authorization. The base is Casdoor `v4.15.0`, commit
+`2301694036cbdcf932b3b1cbef02fb61d9820429`.
 
-Themes, OIDC, SAML, the SCIM server and SCIM syncer are existing Casdoor features.
-The following changes adapt specific behavior and dependencies in that release.
+## Provision users and groups through SCIM
 
-## 1. Protocol and claim integration
+**Thesmos → Casdoor:** a SCIM provisioner sends user/group changes to Casdoor's
+SCIM API. This version improves how Casdoor finds and updates those records:
 
-Patch: [casdoor-integration.patch](../patches/casdoor-integration.patch).
+| Change | Why it matters |
+| --- | --- |
+| Apply equality filters to user/group lookups. | The provisioner can find an existing account or group before creating or updating it. |
+| Count all matching records and paginate the returned results. | The provisioner can traverse a directory without mistaking a page's length for the total. |
+| Preserve group `externalId` through creation and updates. | The provisioner can retain the source group's identity across synchronization. |
+| Map SCIM `active` to Casdoor's account state, including PATCH. | A deactivation sent from Thesmos disables the corresponding Casdoor account. |
 
-| Reason | Change in this version | Scope or limitation |
-| --- | --- | --- |
-| Outbound SCIM requests were canceled when the request-building helper returned, before the HTTP client could send them. | Remove the prematurely canceled context; keep the caller's 30-second HTTP client timeout. | Applies to outbound HTTP requests used to import remote users into Casdoor; it does not add SCIM push support. |
-| Provisioners need filtered lookups and a total count independent of the returned page. | Apply supported equality filters to both count and page queries; return the full matching total. | Users: `userName eq` and `externalId eq`. Groups: `displayName eq`. Unsupported expressions are rejected. |
-| A provisioning system needs to retain its own identifier for a group. | Store and return group `externalId`, including updates. | Does not add a group `externalId` list filter. |
-| SCIM deactivation needs to affect Casdoor's account state. | Map the boolean `active` attribute to Casdoor's forbidden-user state on import/update, including PATCH. | Does not revoke an already-issued JWT at a relying party that validates it offline. |
-| Application authorization claims may need nested objects, arrays or booleans. | Add literal `JSON` token attributes and prevent custom attributes/properties from overriding protected protocol claims. Custom refresh tokens omit application custom claims. | JSON values are administrator configuration; no arbitrary code execution. |
-| Email addresses and usernames can change. | Add `usePersistentSamlNameId`, which uses the user's ID and the persistent SAML NameID format. | Opt-in application API setting; requires a nonempty user ID. |
-| Authorization-code exchange must use the redirect URI that created the code. | Store that URI and reject an exchange with an absent or different `redirect_uri`. | Existing clients must send the exact URI; previously issued codes may require fresh login. |
-| A token must belong to the client performing introspection or refresh. | Match application owner, name and organization before accepting the stored token. | Does not grant cross-application introspection. |
-| JWT key changes need a bounded overlap for previously issued tokens. | Add opt-in `retainedSigningCerts` for verification of explicitly retained keys. New refresh tokens carry `kid`. | At most two previous certificates, deadlines within 24 hours, configured by global administrators. This does not add retained keys to application-specific JWKS or implement SAML certificate rollover. |
+**Casdoor → Thesmos:** a provisioner reads Casdoor's SCIM Users/Groups and writes
+them to Thesmos's SCIM API. Filtered responses, correct pagination and retained
+identifiers also support this direction.
 
-See [configuration examples](CONFIGURATION.md) for the added application fields.
+There is also a fix for Casdoor's built-in remote-user import syncer: its HTTP
+request remains usable after the request helper returns. The HTTP client retains
+its 30-second timeout.
 
-## 2. Backend dependencies
+See [SCIM setup and a deactivation request](CONFIGURATION.md#scim-provisioning).
 
-Patch: [casdoor-security-candidate.patch](../patches/casdoor-security-candidate.patch).
+## Keep SAML account linking stable
 
-Updates the Go toolchain/dependencies and replaces the earlier ACME dependency
-with the maintained `go-acme/lego` implementation. Included ACME and SAML
-regressions check affected behavior. These updates do not establish that every
-advisory or authentication path has been cleared; see [release limitations](RELEASE-STATUS.md).
+The optional application setting `usePersistentSamlNameId` uses the user's ID
+as a persistent SAML NameID. An email or username change therefore keeps the
+same subject at the service provider. A deleted and recreated account receives
+its own identity.
 
-## 3. Frontend runtime dependencies
+This supports stable linking when Casdoor provides SAML sign-in to Thesmos
+Enterprise. Enable the setting before linking accounts where possible.
+See [persistent SAML identity](CONFIGURATION.md#persistent-saml-identity).
 
-Patch: [casdoor-frontend-candidate.patch](../patches/casdoor-frontend-candidate.patch).
+## Add structured JWT authorization claims
 
-Updates frontend dependencies, including cookie handling, routing and fetching,
-and obtains SheetJS from its official distribution. The purpose is to update the
-browser dependency set while retaining the Casdoor application and its branding
-configuration. It does not introduce a replacement user interface.
+The `JSON` token attribute type lets an administrator configure an object,
+array, boolean or other JSON literal as a custom claim. This supports structured
+application authorization data alongside Casdoor's existing field mappings.
 
-## 4. Frontend build dependencies
+Application saves validate claim names, types, JSON values and size limits.
+Protected protocol claims retain their issuer-controlled values. Partial updates
+preserve omitted claim settings, and custom refresh tokens carry their protocol
+claims separately from the application's custom payload.
 
-Patch: [casdoor-build-chain-candidate.patch](../patches/casdoor-build-chain-candidate.patch).
+See the [typed JWT claim example](CONFIGURATION.md#typed-jwt-claims).
 
-Updates Vite, Cypress and related build dependencies. These changes affect how
-the frontend is built and tested; they do not add a user-facing authentication
-feature. The container ships the compiled frontend.
+## Bind tokens to the correct client
 
-## 5. Custom claim configuration
+Authorization-code exchange checks the exact redirect URI used to issue the
+code. Introspection and refresh match the stored token's application owner,
+name and organization to the authenticated client.
 
-Patch: [casdoor-claim-configuration-candidate.patch](../patches/casdoor-claim-configuration-candidate.patch).
+Applications can also retain up to two previous JWT signing certificates for
+verification during a bounded overlap. Newly issued refresh tokens include a
+key ID. See [JWT signing-key overlap](CONFIGURATION.md#jwt-signing-key-overlap).
 
-Rejects invalid claim configuration when an application is saved: reserved or
-duplicate names, unknown fields/types, malformed JSON and oversized values.
-Partial application updates write only selected fields, so an unrelated edit
-cannot overwrite omitted claim settings. Explicitly clearing selected claim
-settings still works. Token issuance also tolerates legacy null attribute rows.
+## Update dependencies and distribution material
 
-This protects the configuration boundary; administrators still control which
-user data is exposed to clients. The JSON attribute type is available through
-the API and has no added dropdown option in the current UI.
+Backend changes update Go dependencies and use the maintained `go-acme/lego`
+ACME implementation. Frontend changes update runtime/build dependencies and use
+the official SheetJS distribution. Related regression tests are included.
 
-## 6. LDAP dependency licence
-
-Patch: [casdoor-ldap-license-candidate.patch](../patches/casdoor-ldap-license-candidate.patch).
-
-Selects the LDAP message library author's MIT revision
+The LDAP message library uses its author's MIT revision
 [`8d785c64d1c87d6fa9c95591edf9d8abc603a34c`](https://github.com/lor00x/goldap/commit/8d785c64d1c87d6fa9c95591edf9d8abc603a34c).
-Its parent is the previously pinned GPLv2 revision and only `LICENSE` changed;
-the library's other files are identical. This uses the author's licence change
-and preserves that notice in the distribution.
+Only its licence changed from the previously pinned revision. The original
+notice is included with the other [distribution sources and notices](DISTRIBUTION.md).
 
-## Upgrade considerations
+## Patch files
 
-Test redirect URI handling, refresh-token contents and key policy before upgrading
-an existing deployment. Enabling retained certificates requires JWTs with `kid`;
-older keyless refresh tokens may require reauthentication. Persistent SAML NameIDs
-change the subject seen by a service provider and can require account relinking.
+[upstream.lock.json](../upstream.lock.json) records the application order and
+SHA-256 checksums. Original Casdoor headers and authorship are preserved.
 
-All patches are independently maintained candidate changes. Upstream support is
-not implied. [Maintenance instructions](../MAINTENANCE.md) describe how they are
-reviewed against later Casdoor releases and removed when upstream equivalents
-are verified.
+| File | Changes |
+| --- | --- |
+| [Integration](../patches/casdoor-integration.patch) | SCIM, JSON claims, persistent SAML identity, redirect/client binding and retained JWT certificates. |
+| [Backend dependencies](../patches/casdoor-security-candidate.patch) | Go/ACME updates and regressions. |
+| [Frontend dependencies](../patches/casdoor-frontend-candidate.patch) | Browser runtime dependencies and SheetJS distribution. |
+| [Build dependencies](../patches/casdoor-build-chain-candidate.patch) | Frontend build/test dependencies. |
+| [Claim configuration](../patches/casdoor-claim-configuration-candidate.patch) | Save-time validation and selected-field application updates. |
+| [LDAP licence](../patches/casdoor-ldap-license-candidate.patch) | Author-provided MIT dependency revision. |
+
+Before deploying or upgrading, read [version limits and compatibility changes](RELEASE-STATUS.md).

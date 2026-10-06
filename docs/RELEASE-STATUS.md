@@ -32,9 +32,10 @@ Neither setting alone provides production-safe initialization.
 - JWT customization uses supported field mappings and literal values; there is
   no lambda or arbitrary script execution.
 - SCIM filters support the equality subset listed in [configuration](CONFIGURATION.md).
-  The syncer imports remote users only; it cannot push users or import groups.
-  A separate provisioner is needed for Casdoor-to-remote writes, with an explicit
-  authority and loop prevention when flows run in both directions.
+  Thesmos-to-Casdoor writes use Casdoor's SCIM API. A separate provisioner
+  carries changes between the two directories. Casdoor's built-in syncer
+  imports remote Users only; remote writes and group import are unimplemented.
+  Flows in both directions need an explicit authority and loop prevention.
 - JWT certificate retention does not add retained keys to application-specific
   JWKS or implement SAML certificate rollover.
 - The Compose recipe starts Casdoor only and has no production HTTPS endpoint,
@@ -42,6 +43,20 @@ Neither setting alone provides production-safe initialization.
 - Its memory/CPU limits are evaluation settings, not measured production capacity.
 - Thesmos Enterprise features need the corresponding edition and licence; this
   repository does not distribute an Enterprise implementation or image.
+
+## Upgrade considerations
+
+Authorization-code clients must send the exact redirect URI. Codes issued before
+the binding change may require fresh login. Custom refresh tokens omit application
+custom claims; check any client that relied on those values.
+
+Enabling retained JWT certificates requires tokens with an authorized `kid`;
+older keyless refresh tokens may require reauthentication. Retention applies to
+Casdoor's verification policy. Application-specific JWKS still returns the current
+certificate, so relying-party key distribution needs separate configuration.
+
+Changing an existing SAML NameID policy can require service-provider account
+relinking. Test these changes against the existing deployment before upgrading.
 
 ## Production work still required
 

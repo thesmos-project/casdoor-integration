@@ -6,6 +6,62 @@ is supplied at deployment. See the [local Compose recipe](../recipes/README.md)
 for the required PostgreSQL configuration and [release limitations](RELEASE-STATUS.md)
 before exposing any endpoint.
 
+## SCIM provisioning
+
+The Thesmos directory SCIM API requires Enterprise. Use a SCIM provisioner
+to transfer directory changes between the two applications.
+
+### Send Thesmos users and groups to Casdoor
+
+Use a SCIM provisioner to deliver changes from the Thesmos directory to Casdoor's
+SCIM API. Casdoor receives requests to create, update and deactivate users and
+to manage groups and memberships. Configure the Casdoor SCIM credentials,
+organization and attribute mappings on the provisioner.
+
+For example, the provisioner can disable a Casdoor account by sending a SCIM
+PATCH to its user resource:
+
+```http
+PATCH <Casdoor SCIM base>/Users/<user-id>
+Content-Type: application/scim+json
+```
+
+```json
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+  "Operations": [
+    {"op": "replace", "path": "active", "value": false}
+  ]
+}
+```
+
+The active-state patch applies that boolean to Casdoor's forbidden-user state.
+The group identifier patch retains the source's `externalId`. The lookup and
+pagination patches help the provisioner locate and reconcile existing records.
+
+### Send Casdoor users and groups to Thesmos
+
+Configure the provisioner to read Casdoor's SCIM Users/Groups and write them to
+Thesmos's SCIM API. Choose an authoritative directory for each user/group scope.
+If both directions run, use distinct ownership scopes and define how conflicting
+changes are handled.
+
+The provisioner runs as a separate component. The Casdoor image supplies the
+Casdoor SCIM endpoints for both receiving writes and serving reads.
+
+### Lookup fields
+
+Users accept single string equality filters on `userName` and `externalId`.
+Groups accept them on `displayName`. Pagination reports the matching total,
+with a service-provider maximum of 100 results per page.
+
+### Import remote users with Casdoor's syncer
+
+Casdoor also has a built-in SCIM user import syncer. Configure a remote SCIM
+server and mappings to fetch its Users into Casdoor. The request-lifetime patch
+allows the HTTP requests to complete under the client's 30-second timeout.
+See [version limitations](RELEASE-STATUS.md) for its supported operations.
+
 ## Server configuration and persistence
 
 Mount a readable file at `/conf/app.conf`. The container refuses to start without
@@ -20,11 +76,9 @@ Media uploads and other writable storage require a configured volume or external
 storage provider. The supplied recipe does not configure that storage or a
 durable session store.
 
-`initDataNewOnly=true` is the image default. It avoids replacing existing records
-on startup, but does not replace Casdoor's demonstration administrator credentials
-on a fresh database. Setting it to `false` with a replacement import can recreate
-users and certificates on subsequent starts. It is not a safe one-time bootstrap
-mechanism.
+`initDataNewOnly=true` is the image default and preserves existing records during
+initialization. Use the [bootstrap guidance](RELEASE-STATUS.md#initial-administrator-setup)
+when setting up a fresh database.
 
 ## Themes and branding
 
@@ -41,8 +95,8 @@ settings. The following is an example `themeData` value for an organization:
 }
 ```
 
-These are upstream Casdoor settings. They can be changed without rebuilding the
-image, and saved theme configuration persists with the database. Changes to
+These upstream Casdoor settings are saved in the database and take effect through
+administrator configuration. Changes to
 frontend components or styles outside the supported settings require rebuilding
 the frontend. Logo/media files need persistent storage separately from their
 configuration records.
@@ -68,15 +122,12 @@ fragment adds a literal JSON claim to its `tokenAttributes`:
 
 The emitted claim is an object, rather than a JSON-encoded string. The `value`
 is a JSON string in the application configuration, containing the JSON literal
-to emit. This fragment illustrates fields to merge into an existing application;
-it is not a complete application-creation request.
+to emit. Merge this fragment into an existing application configuration.
 
 The upstream field mappings remain available. Added `JSON` attributes are
-configured through the authenticated application API; the UI dropdown has not
-been extended. Static roles apply to every user of that application, so use
+configured through the authenticated application API. Static roles apply to every user of that application, so use
 appropriate per-user mappings when authorizations differ by user. Only trusted
-administrators should select claim fields and values. There is no lambda or
-other executable JWT customization hook.
+administrators should select claim fields and values. See [version limitations](RELEASE-STATUS.md) for the customization scope.
 
 Configuration limits: at most 64 `tokenFields` and 64 `tokenAttributes`, claim
 names of 1–256 bytes, and attribute values up to 8192 bytes. Invalid JSON,
@@ -110,29 +161,5 @@ At most two previous certificates are allowed, with deadlines no more than
 certificate. With this option enabled, incoming JWTs need an authorized `kid`
 and the application's signing algorithm. Expired or removed certificates no
 longer authorize verification. Without it, the existing single-key behavior is
-preserved. This option does not add retained keys to application-specific JWKS; relying
-parties need verified key-distribution and rotation configuration.
-
-## SCIM provisioning
-
-Casdoor's SCIM server accepts provisioning of Users and Groups into Casdoor.
-Its SCIM syncer instead reads Users from a remote SCIM server and imports them
-into Casdoor. In this pinned version, the syncer's add/update methods reject
-remote writes and its group/membership import methods are unimplemented. The
-request-lifetime patch makes the read requests usable; it does not add those
-missing operations.
-
-Provisioning from Casdoor into another system requires a separate provisioner,
-which is not included here. Choose an authoritative writer for each user/group
-scope and configure credentials, organization and mappings. A deployment with
-flows in both directions also needs conflict resolution and loop prevention.
-
-This version accepts single string equality filters for Users (`userName`,
-`externalId`) and Groups (`displayName`). Other operators and compound filters
-are rejected. Group external IDs are retained, but are not a supported group
-list-filter field. Pagination reports the matching total, with a service-provider
-maximum of 100 results per page.
-
-On the SCIM server, `active: false` maps to Casdoor's forbidden-user state. It cannot immediately
-invalidate tokens at clients that only verify JWT signatures offline; configure
-token lifetime and the client's revocation/introspection behavior accordingly.
+preserved. Configure relying-party key distribution separately; see the
+[rotation and upgrade limits](RELEASE-STATUS.md#upgrade-considerations).
