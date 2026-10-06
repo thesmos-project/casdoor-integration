@@ -14,6 +14,14 @@ mkdir -p .local/deployment
 cp recipes/app.conf.example .local/deployment/app.conf
 ```
 
+Create the initial administrator password; secure startup refuses to start
+without it:
+
+```sh
+openssl rand -base64 24 > .local/deployment/admin-password
+chmod 0644 .local/deployment/admin-password
+```
+
 Edit `.local/deployment/app.conf` with your PostgreSQL hostname, database,
 restricted role/password, trusted CA path and origin. Place the PostgreSQL CA at
 `.local/deployment/db-ca.pem`. PostgreSQL TLS uses `sslmode=verify-full`.
@@ -29,10 +37,11 @@ docker compose -f recipes/compose.yaml config --quiet
 docker compose -f recipes/compose.yaml up -d
 ```
 
-Open `http://localhost:19080`. Access is bound to loopback because this candidate
-still uses upstream demonstration administrator credentials on a fresh database.
-Read the [bootstrap limitations](../docs/RELEASE-STATUS.md#initial-administrator-setup).
-Do not expose this recipe as a production service.
+Open `http://localhost:19080` and sign in as `admin` in the `built-in`
+organization with the password from `.local/deployment/admin-password`. See
+[secure startup](../docs/CONFIGURATION.md#initial-administrator-and-secure-startup).
+The recipe serves plain HTTP on loopback for evaluation; do not expose it as a
+production service.
 
 Stop the component with:
 
@@ -57,8 +66,7 @@ and supplies writable temporary storage. Theme, client and identity settings are
 managed through Casdoor's UI/API and persist in PostgreSQL. See
 [configuration examples](../docs/CONFIGURATION.md).
 
-`initDataNewOnly=true` avoids replacing existing records; it does not provide
-secure initial administrator setup. The recipe has no media upload volume or
+`initDataNewOnly=true` avoids replacing existing records. The recipe has no media upload volume or
 durable session-store configuration. Its 384 MiB memory limit, one-CPU limit and
 Go memory settings are evaluation bounds, not measured production capacity.
 

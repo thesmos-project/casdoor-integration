@@ -1,7 +1,7 @@
 # Automated validation coverage
 
 This document describes checks provided by the builder and workflows for
-`v4.15.0-thesmos.1-rc.1`. It is not a certification of production security or
+`v4.15.0-thesmos.1-rc.2`. It is not a certification of production security or
 compatibility with every OIDC, SAML or SCIM client.
 
 | Check | Coverage |
@@ -10,14 +10,13 @@ compatibility with every OIDC, SAML or SCIM client.
 | Backend build | Selected object, SCIM and certificate regressions under the Go race detector, plus LDAP package tests and compilation. |
 | Frontend build | Type checking, compilation and agreement between normal and dependency-inventory build output. |
 | Distribution | Installed system packages match their lock; required dependency notices and corresponding source archives are present; an SPDX inventory is generated. |
-| Container startup | Missing mounted configuration is refused. |
+| Container startup | Missing mounted configuration is refused. A fresh database without a bootstrap administrator secret is refused; with one, the default password no longer signs in, and changing the secret file does not reset the password on restart. |
 | Configurable runtime | Served frontend, saved organization theme, theme persistence across restart and rejection of a protected claim override. |
 | Runtime restrictions | Nonroot execution with a read-only filesystem and dropped capabilities. |
 | Publication | Registry upload probe, image signing, SPDX attestation verification and a smoke test of the pulled digest. An optional public mirror must also pass anonymous pull and signature/attestation verification. |
 
 The runtime smoke test uses a disposable SQLite database on loopback. It does
-not test the PostgreSQL deployment recipe, a complete Thesmos stack or production
-bootstrap. Publication checks run when publishing; passing a source build alone
+not test the PostgreSQL deployment recipe or a complete Thesmos stack. Publication checks run when publishing; passing a source build alone
 does not establish that an image is available in a registry.
 
 The [Check candidate workflow](../.github/workflows/check.yml) produces build,

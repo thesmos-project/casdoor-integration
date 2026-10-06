@@ -1,0 +1,343 @@
+diff --git a/main.go b/main.go
+index e30eb86..7484038 100644
+--- a/main.go
++++ b/main.go
+@@ -1,4 +1,5 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-07.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -17,6 +18,7 @@ package main
+ import (
+ 	"encoding/json"
+ 	"fmt"
++	"os"
+ 
+ 	"github.com/beego/beego/v2/core/logs"
+ 	"github.com/beego/beego/v2/server/web"
+@@ -76,6 +78,23 @@ func main() {
+ 	authz.InitApi()
+ 	object.InitUserManager()
+ 	object.InitFromFile()
++	// Before any listener starts: set or require a non-default administrator
++	// password and refuse unsafe settings when secureStartup is enabled.
++	notices, err := object.ApplySecureStartup(object.SecureStartupOptions{
++		Enabled:           conf.GetConfigBool("secureStartup"),
++		AdminPasswordFile: conf.GetConfigString("bootstrapAdminPasswordFile"),
++		RunMode:           web.BConfig.RunMode,
++		RadiusPort:        conf.GetConfigString("radiusServerPort"),
++		RadiusSecret:      conf.GetConfigString("radiusSecret"),
++		InitDataFile:      conf.GetConfigString("initDataFile"),
++	})
++	for _, notice := range notices {
++		fmt.Println(notice)
++	}
++	if err != nil {
++		fmt.Fprintln(os.Stderr, "Secure startup refused: "+err.Error())
++		os.Exit(1)
++	}
+ 	object.InitCleanupTokens()
+ 	object.InitCleanupRecords()
+ 	object.InitCleanupDeviceAuthMap()
+@@ -115,7 +134,7 @@ func main() {
+ 
+ 	var logAdapter string
+ 	logConfigMap := make(map[string]interface{})
+-	err := json.Unmarshal([]byte(conf.GetConfigString("logConfig")), &logConfigMap)
++	err = json.Unmarshal([]byte(conf.GetConfigString("logConfig")), &logConfigMap)
+ 	if err != nil {
+ 		panic(err)
+ 	}
+diff --git a/object/thesmos_secure_startup.go b/object/thesmos_secure_startup.go
+new file mode 100644
+index 0000000..4db2f17
+--- /dev/null
++++ b/object/thesmos_secure_startup.go
+@@ -0,0 +1,127 @@
++// Copyright 2026 The Thesmos integration contributors.
++// Added for the Thesmos integration evaluation, 2026-10-07.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//      http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package object
++
++import (
++	"errors"
++	"fmt"
++	"os"
++	"strings"
++
++	"github.com/casdoor/casdoor/cred"
++)
++
++// SecureStartupOptions holds the settings checked before Casdoor serves requests.
++type SecureStartupOptions struct {
++	Enabled           bool
++	AdminPasswordFile string
++	RunMode           string
++	RadiusPort        string
++	RadiusSecret      string
++	InitDataFile      string
++}
++
++const minBootstrapAdminPasswordLength = 16
++
++// Passwords created by upstream initialization and common first-run guesses.
++var knownDefaultPasswords = []string{"123", "123456", "admin", "password"}
++
++// ApplySecureStartup runs after initialization and before any listener starts.
++// While the built-in administrator still has a known default password, it sets
++// the password from AdminPasswordFile; a password already changed is never
++// reset. With Enabled, it refuses startup that would serve a default password
++// or use unsafe settings. Notices are safe to log; they never contain secrets.
++func ApplySecureStartup(options SecureStartupOptions) ([]string, error) {
++	notices := []string{}
++	if options.Enabled {
++		if options.RunMode != "prod" {
++			return notices, errors.New("secure startup requires runmode = prod")
++		}
++		if options.RadiusPort != "" && options.RadiusPort != "0" && (options.RadiusSecret == "" || options.RadiusSecret == "secret") {
++			return notices, errors.New("secure startup requires a unique radiusSecret, or an empty radiusServerPort to disable RADIUS")
++		}
++		if options.InitDataFile != "" {
++			if _, err := os.Stat(options.InitDataFile); err != nil {
++				return notices, fmt.Errorf("initDataFile %s is not readable", options.InitDataFile)
++			}
++		}
++	}
++
++	user, err := getUser("built-in", "admin")
++	if err != nil {
++		return notices, err
++	}
++	if user == nil {
++		return notices, nil
++	}
++	organization, err := getOrganization("admin", "built-in")
++	if err != nil {
++		return notices, err
++	}
++	if organization == nil {
++		return notices, errors.New("the built-in organization is missing")
++	}
++	if !hasKnownDefaultPassword(user, organization) {
++		return notices, nil
++	}
++
++	if options.AdminPasswordFile == "" {
++		if options.Enabled {
++			return notices, fmt.Errorf("the built-in administrator has a default password; set bootstrapAdminPasswordFile to a file containing a unique password of at least %d characters", minBootstrapAdminPasswordLength)
++		}
++		return append(notices, "WARNING: the built-in administrator has a default password; change it before exposing Casdoor"), nil
++	}
++	raw, err := os.ReadFile(options.AdminPasswordFile)
++	if err != nil {
++		return notices, errors.New("bootstrapAdminPasswordFile is not readable")
++	}
++	password := strings.TrimRight(string(raw), "\r\n")
++	if len(password) < minBootstrapAdminPasswordLength || strings.TrimSpace(password) != password || isKnownDefaultPassword(password) {
++		return notices, fmt.Errorf("the bootstrap administrator password must have at least %d characters without surrounding whitespace", minBootstrapAdminPasswordLength)
++	}
++	user.Password = password
++	user.UpdateUserPassword(organization)
++	if _, err := UpdateUser(user.GetId(), user, []string{"password", "password_type", "password_salt"}, true); err != nil {
++		return notices, err
++	}
++	return append(notices, "The built-in administrator password was set from bootstrapAdminPasswordFile."), nil
++}
++
++func isKnownDefaultPassword(password string) bool {
++	for _, known := range knownDefaultPasswords {
++		if password == known {
++			return true
++		}
++	}
++	return false
++}
++
++func hasKnownDefaultPassword(user *User, organization *Organization) bool {
++	passwordType := user.PasswordType
++	if passwordType == "" {
++		passwordType = organization.PasswordType
++	}
++	credManager := cred.GetCredManager(passwordType)
++	if credManager == nil {
++		return false
++	}
++	for _, known := range knownDefaultPasswords {
++		if credManager.IsPasswordCorrect(known, user.Password, organization.PasswordSalt) || credManager.IsPasswordCorrect(known, user.Password, user.PasswordSalt) {
++			return true
++		}
++	}
++	return false
++}
+diff --git a/object/thesmos_secure_startup_test.go b/object/thesmos_secure_startup_test.go
+new file mode 100644
+index 0000000..9364665
+--- /dev/null
++++ b/object/thesmos_secure_startup_test.go
+@@ -0,0 +1,126 @@
++// Copyright 2026 The Thesmos integration contributors.
++// Added for the Thesmos integration evaluation, 2026-10-07.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//      http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package object
++
++import (
++	"os"
++	"path/filepath"
++	"strings"
++	"testing"
++
++	"github.com/casdoor/casdoor/cred"
++	"github.com/xorm-io/xorm"
++)
++
++func secureStartupFixture(t *testing.T, password string) {
++	t.Helper()
++	engine, err := xorm.NewEngine("sqlite", t.TempDir()+"/startup.sqlite")
++	if err != nil {
++		t.Fatal(err)
++	}
++	previous := ormer
++	ormer = &Ormer{Engine: engine}
++	t.Cleanup(func() { ormer = previous; engine.Close() })
++	if err := engine.Sync2(&User{}, &Organization{}, &Syncer{}); err != nil {
++		t.Fatal(err)
++	}
++	organization := &Organization{Owner: "admin", Name: "built-in", PasswordType: "bcrypt"}
++	if _, err := engine.Insert(organization); err != nil {
++		t.Fatal(err)
++	}
++	user := &User{Owner: "built-in", Name: "admin", Id: "admin-id", Password: password, IsAdmin: true}
++	user.UpdateUserPassword(organization)
++	if _, err := engine.Insert(user); err != nil {
++		t.Fatal(err)
++	}
++}
++
++func adminPasswordIs(t *testing.T, password string) bool {
++	t.Helper()
++	user, err := getUser("built-in", "admin")
++	if err != nil || user == nil {
++		t.Fatal("built-in administrator missing")
++	}
++	return cred.GetCredManager(user.PasswordType).IsPasswordCorrect(password, user.Password, user.PasswordSalt)
++}
++
++func writeSecret(t *testing.T, value string) string {
++	t.Helper()
++	path := filepath.Join(t.TempDir(), "admin-password")
++	if err := os.WriteFile(path, []byte(value), 0o600); err != nil {
++		t.Fatal(err)
++	}
++	return path
++}
++
++func TestEvaluationSecureStartupRefusesUnsafeSettings(t *testing.T) {
++	secret := "correct-horse-battery-staple"
++	valid := SecureStartupOptions{Enabled: true, RunMode: "prod", AdminPasswordFile: writeSecret(t, secret+"\n")}
++	for _, tc := range []struct {
++		name   string
++		change func(*SecureStartupOptions)
++		error  string
++	}{
++		{"missing secret", func(o *SecureStartupOptions) { o.AdminPasswordFile = "" }, "default password"},
++		{"unreadable secret", func(o *SecureStartupOptions) { o.AdminPasswordFile = filepath.Join(t.TempDir(), "absent") }, "not readable"},
++		{"short secret", func(o *SecureStartupOptions) { o.AdminPasswordFile = writeSecret(t, "short") }, "at least"},
++		{"whitespace secret", func(o *SecureStartupOptions) { o.AdminPasswordFile = writeSecret(t, " "+strings.Repeat("a", 20)) }, "whitespace"},
++		{"development mode", func(o *SecureStartupOptions) { o.RunMode = "dev" }, "runmode"},
++		{"default RADIUS secret", func(o *SecureStartupOptions) { o.RadiusPort, o.RadiusSecret = "1812", "secret" }, "radiusSecret"},
++		{"missing initialization file", func(o *SecureStartupOptions) { o.InitDataFile = filepath.Join(t.TempDir(), "init.json") }, "initDataFile"},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			secureStartupFixture(t, "123")
++			options := valid
++			tc.change(&options)
++			if _, err := ApplySecureStartup(options); err == nil || !strings.Contains(err.Error(), tc.error) {
++				t.Fatalf("expected refusal containing %q, got %v", tc.error, err)
++			}
++			if !adminPasswordIs(t, "123") {
++				t.Fatal("a refused startup changed the administrator password")
++			}
++		})
++	}
++}
++
++func TestEvaluationSecureStartupSetsBootstrapPasswordOnce(t *testing.T) {
++	secureStartupFixture(t, "123")
++	first := "first-unique-bootstrap-secret"
++	options := SecureStartupOptions{Enabled: true, RunMode: "prod", RadiusPort: "", AdminPasswordFile: writeSecret(t, first+"\n")}
++	notices, err := ApplySecureStartup(options)
++	if err != nil || len(notices) != 1 || strings.Contains(notices[0], first) {
++		t.Fatalf("bootstrap failed or logged the secret: %v %v", notices, err)
++	}
++	if !adminPasswordIs(t, first) || adminPasswordIs(t, "123") {
++		t.Fatal("bootstrap secret not applied")
++	}
++	options.AdminPasswordFile = writeSecret(t, "second-unique-bootstrap-secret")
++	if _, err := ApplySecureStartup(options); err != nil || !adminPasswordIs(t, first) {
++		t.Fatalf("restart reset an administrator password that was no longer a default: %v", err)
++	}
++}
++
++func TestEvaluationSecureStartupDisabledWarnsOnly(t *testing.T) {
++	secureStartupFixture(t, "123")
++	notices, err := ApplySecureStartup(SecureStartupOptions{RunMode: "dev", RadiusPort: "1812", RadiusSecret: "secret"})
++	if err != nil || len(notices) != 1 || !strings.Contains(notices[0], "WARNING") || !adminPasswordIs(t, "123") {
++		t.Fatalf("disabled secure startup must keep upstream behavior with a warning: %v %v", notices, err)
++	}
++	secureStartupFixture(t, "already-changed-password")
++	if notices, err := ApplySecureStartup(SecureStartupOptions{Enabled: true, RunMode: "prod"}); err != nil || len(notices) != 0 {
++		t.Fatalf("a changed password must not require a bootstrap secret: %v %v", notices, err)
++	}
++}
+diff --git a/radius/server.go b/radius/server.go
+index f018981..09ff9a1 100644
+--- a/radius/server.go
++++ b/radius/server.go
+@@ -1,4 +1,5 @@
+ // Copyright 2023 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-07.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -70,9 +71,15 @@ func takeAccessState(state string, organization string, username string) bool {
+ }
+ 
+ func StartRadiusServer() {
++	// Like the LDAP server, an empty or zero port disables RADIUS; an empty port
++	// would otherwise listen on a random public port.
++	port := conf.GetConfigString("radiusServerPort")
++	if port == "" || port == "0" {
++		return
++	}
+ 	secret := conf.GetConfigString("radiusSecret")
+ 	server := radius.PacketServer{
+-		Addr:         "0.0.0.0:" + conf.GetConfigString("radiusServerPort"),
++		Addr:         "0.0.0.0:" + port,
+ 		Handler:      radius.HandlerFunc(handlerRadius),
+ 		SecretSource: radius.StaticSecretSource([]byte(secret)),
+ 	}

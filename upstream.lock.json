@@ -32,6 +32,11 @@
     {
       "path": "patches/casdoor-ldap-license-candidate.patch",
       "sha256": "bf102ec21b24237b83f46b0ee8a872ce11be4aa7a228f87b56fa00e4cf04182d"
+    },
+    {
+      "path": "patches/casdoor-secure-startup-candidate.patch",
+      "sha256": "713853eb3d7fbce0caa0c56ae89a7ddce777cbbef8d6d0f5f4a2ba8e2c7fdfb5",
+      "purpose": "Set the built-in administrator password from a bootstrap secret before serving, refuse unsafe startup settings, and disable RADIUS without a port."
     }
   ]
 }

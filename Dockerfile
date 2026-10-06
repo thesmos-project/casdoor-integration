@@ -74,7 +74,7 @@ COPY --from=backend /source/integration-provenance.json /licenses/integration-pr
 COPY LICENSE NOTICE /licenses/
 COPY licenses/ /licenses/third-party/
 COPY docker/entrypoint.sh /entrypoint.sh
-ENV logConfig='{"adapter":"console","level":4}' initDataNewOnly=true
+ENV logConfig='{"adapter":"console","level":4}' initDataNewOnly=true secureStartup=true
 USER 1000:1000
 EXPOSE 8000
 ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]

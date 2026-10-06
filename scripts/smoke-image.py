@@ -5,6 +5,7 @@ import http.cookiejar
 import json
 from pathlib import Path
 import re
+import secrets
 import socket
 import subprocess
 import time
@@ -38,6 +39,11 @@ def main():
     for key in ["origin", "originFrontend"]:
         config = re.sub(r"^" + key + r"\s*=.*$", f'{key} = "{base}"', config, flags=re.M)
     (fixture / "app.conf").write_text(config)
+    # Secure startup sets the built-in administrator password from this file once.
+    admin_password = secrets.token_urlsafe(24)
+    password_file = fixture / "admin-password"
+    password_file.write_text(admin_password + "\n")
+    password_file.chmod(0o644)
     # A host runner need not have UID 1000. Use an owned, disposable named volume.
     image = json.loads(docker("image", "inspect", options.image).stdout)[0]
     report = {"image": image["Id"], "scope": "Disposable SQLite/loopback packaging fixture; not production acceptance", "checks": {}}
@@ -68,15 +74,17 @@ def main():
             time.sleep(1)
         raise RuntimeError("Disposable image did not become ready; see ignored fixture logs")
 
-    def login():
+    def attempt_login(password):
         opener = client()
-        # These are upstream defaults, used only in this disposable local fixture.
-        # Production bootstrap is a separate release gate.
         status, body = request(opener, "/api/login", {
             "type": "login", "signinMethod": "Password", "organization": "built-in",
-            "username": "admin", "password": "123", "application": "app-built-in", "method": "signin",
+            "username": "admin", "password": password, "application": "app-built-in", "method": "signin",
         })
-        if status != 200 or body.get("status") != "ok":
+        return opener, status == 200 and body.get("status") == "ok"
+
+    def login():
+        opener, ok = attempt_login(admin_password)
+        if not ok:
             raise RuntimeError("Disposable fixture login failed")
         return opener
 
@@ -84,16 +92,25 @@ def main():
         missing = docker("run", "--rm", image["Id"], check=False)
         assert missing.returncode == 1 and "Mount a readable Casdoor configuration" in missing.stderr
         report["checks"]["missing_configuration_refused"] = True
+        # A fresh database without the bootstrap secret must not start serving.
+        refused = docker("run", "--rm", "--read-only", "--cap-drop=ALL", "--tmpfs", "/data:rw,uid=1000,gid=1000",
+                         "--tmpfs", "/tmp:rw,noexec,nosuid,size=32m,mode=1777",
+                         "--volume", f"{fixture}/app.conf:/conf/app.conf:ro", image["Id"], check=False)
+        assert refused.returncode != 0 and "Secure startup refused" in refused.stderr
+        report["checks"]["default_admin_password_refused"] = True
         docker("volume", "create", volume)
         docker("run", "--rm", "--user", "0", "--entrypoint", "/bin/sh", "--volume", f"{volume}:/data", image["Id"], "-ec", "chown 1000:1000 /data")
         docker("run", "-d", "--name", name, "--read-only", "--cap-drop=ALL", "--security-opt=no-new-privileges:true",
                "--pids-limit=256", "--memory=384m", "--cpus=1", "--tmpfs", "/tmp:rw,noexec,nosuid,size=32m,mode=1777",
                "--publish", f"127.0.0.1:{port}:8000", "--volume", f"{fixture}/app.conf:/conf/app.conf:ro",
+               "--volume", f"{password_file}:/conf/admin-password:ro",
                "--volume", f"{volume}:/data:rw", image["Id"])
         html = ready()
         assert isinstance(html, str) and "assets/" in html
         report["checks"]["frontend_served"] = True
+        assert not attempt_login("123")[1]
         opener = login()
+        report["checks"]["bootstrap_admin_password_applied"] = True
         status, body = request(opener, "/api/get-organization?id=admin/built-in")
         assert status == 200 and body["status"] == "ok"
         organization = body["data"]
@@ -102,9 +119,14 @@ def main():
         status, body = request(opener, "/api/update-organization?id=admin/built-in", organization)
         assert status == 200 and body["status"] == "ok"
         report["checks"]["theme_saved"] = True
+        # Changing the secret file must not reset an administrator password.
+        replacement = secrets.token_urlsafe(24)
+        password_file.write_text(replacement + "\n")
         docker("restart", name)
         ready()
+        assert not attempt_login(replacement)[1]
         opener = login()
+        report["checks"]["bootstrap_does_not_reset_password"] = True
         status, body = request(opener, "/api/get-organization?id=admin/built-in")
         assert status == 200 and body["data"]["themeData"] == theme
         report["checks"]["theme_survives_restart"] = True

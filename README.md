@@ -57,18 +57,23 @@ build keeps these features configurable through Casdoor's administrator UI/API.
 
 ## Try the current version
 
-Current source: **`v4.15.0-thesmos.1-rc.1`**, based on Casdoor **`v4.15.0`**,
-targeting **`linux/amd64`**. The signed evaluation image is published at:
+Current source: **`v4.15.0-thesmos.1-rc.2`**, based on Casdoor **`v4.15.0`**,
+targeting **`linux/amd64`**. It adds secure startup to the previous candidate; its
+image publication is pending. The latest published signed evaluation image is
+`v4.15.0-thesmos.1-rc.1`, which still starts with the upstream default
+administrator password:
 
 ```text
 registry.thesmos.dev/thesmos/casdoor@sha256:afe7e0c8ece067a9b4ef4cf38e8e9cf108c5b7b4b96b97f335aa005b338f60d4
 ```
 
-Pull it by this digest; the tag `v4.15.0-thesmos.1-rc.1` refers to the same image.
+Pull it by this digest; the `v4.15.0-thesmos.1-rc.1` tag refers to the same image.
 [Verify its signature and SBOM](docs/REGISTRY.md#verify-a-published-image) before use.
 
 This is an evaluation candidate. Use a disposable database and keep access on
 loopback while [production requirements](docs/RELEASE-STATUS.md) remain open.
+On a new database the image requires an initial administrator password file;
+see [secure startup](docs/CONFIGURATION.md#initial-administrator-and-secure-startup).
 
 Requires Git, Python 3, authenticated GitHub CLI and Docker with Buildx:
 

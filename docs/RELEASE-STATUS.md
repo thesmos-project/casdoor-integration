@@ -2,11 +2,11 @@
 
 | Item | Status |
 | --- | --- |
-| Version | `v4.15.0-thesmos.1-rc.1` |
-| Source | Casdoor `v4.15.0` plus the [six published patches](PATCHES.md) |
+| Version | `v4.15.0-thesmos.1-rc.2` |
+| Source | Casdoor `v4.15.0` plus the [seven published patches](PATCHES.md) |
 | Platform | `linux/amd64` |
 | Local use | Buildable evaluation image and loopback Compose recipe |
-| Registry distribution | Signed evaluation image `registry.thesmos.dev/thesmos/casdoor@sha256:afe7e0c8ece067a9b4ef4cf38e8e9cf108c5b7b4b96b97f335aa005b338f60d4` |
+| Registry distribution | `rc.2` publication pending. Signed `rc.1` image, without secure startup: `registry.thesmos.dev/thesmos/casdoor@sha256:afe7e0c8ece067a9b4ef4cf38e8e9cf108c5b7b4b96b97f335aa005b338f60d4` |
 | Production release | None; this candidate is not approved for production |
 
 The [README](../README.md) describes the available capabilities. The
@@ -15,15 +15,21 @@ Users may inspect, modify and build the published source under its licences.
 
 ## Initial administrator setup
 
-A fresh database still receives Casdoor's built-in demonstration administrator
-with password `123`. Its signing certificate is generated during initialization;
-it is not a shared key taken from this repository. The container does not yet
-provide a secure one-time administrator bootstrap.
+The image enables secure startup. On a fresh database, Casdoor still creates its
+built-in `admin` account with the upstream default password, then replaces that
+password from `bootstrapAdminPasswordFile` before any listener starts. Without
+that file, or with a password shorter than 16 characters, startup stops. The
+signing certificate is generated per database; it is not a shared key.
 
-Keep evaluation endpoints on loopback. A bootstrap import with
-`initDataNewOnly=true` does not override already-created default records.
-Changing it to `false` can recreate users and signing certificates on restart.
-Neither setting alone provides production-safe initialization.
+The secret applies only while the password is a known default, so later changes
+made by the administrator survive restarts and secret rotation. Secure startup
+also refuses `runmode` other than `prod`, RADIUS with an empty or default
+secret, and a configured initialization file that is missing. See
+[secure startup](CONFIGURATION.md#initial-administrator-and-secure-startup).
+
+MFA enrollment, account recovery and abuse controls still need acceptance
+testing. With `initDataNewOnly=false`, initialization replaces defined users and
+certificates on every restart; keep the image default `true`.
 
 ## Configuration and compatibility limits
 
@@ -77,8 +83,7 @@ relinking. Test these changes against the existing deployment before upgrading.
 
 ## Production work still required
 
-Production approval remains open for secure bootstrap, MFA/recovery and abuse
-controls; exact-source advisory analysis and independent security review;
+Production approval remains open for MFA/recovery and abuse-control acceptance; exact-source advisory analysis and independent security review;
 live protocol and key-rotation acceptance; upgrade/rollback and backup recovery;
 public HTTPS/proxy configuration and durable storage; and deployment capacity.
 Dependency and asset licensing also require review for the accepted release.

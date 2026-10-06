@@ -93,8 +93,38 @@ storage provider. The supplied recipe does not configure that storage or a
 durable session store.
 
 `initDataNewOnly=true` is the image default and preserves existing records during
-initialization. Use the [bootstrap guidance](RELEASE-STATUS.md#initial-administrator-setup)
-when setting up a fresh database.
+initialization.
+
+## Initial administrator and secure startup
+
+The image sets `secureStartup=true`. Before Casdoor serves requests, it checks
+the built-in `admin` account. While that account has a known default password,
+Casdoor reads a new password from `bootstrapAdminPasswordFile`; without a valid
+file it stops with `Secure startup refused`. Create the file before the first
+start, readable by UID 1000:
+
+```sh
+openssl rand -base64 24 > .local/deployment/admin-password
+chmod 0644 .local/deployment/admin-password
+```
+
+The recipe configuration reads it from `/conf/admin-password`. The password needs
+at least 16 characters without surrounding whitespace. Sign in as `admin` in the
+`built-in` organization with it, then enable MFA for the account. Casdoor uses
+the file only while the password is a default, so changing the password in the
+UI, or rotating the file, never resets the administrator's current password.
+Remove the file after first start if your deployment does not need it.
+
+Secure startup also stops Casdoor when:
+
+- `runmode` is not `prod`;
+- `radiusServerPort` is set and `radiusSecret` is empty or `secret`;
+- `initDataFile` is set but the file is missing.
+
+An empty `radiusServerPort` disables the RADIUS server, as an empty
+`ldapServerPort` disables LDAP. The container runs without privileges, so choose
+ports above 1023 when enabling either server. Setting `secureStartup=false`
+restores upstream behavior with a warning; use it only for local experiments.
 
 ## Themes and branding
 

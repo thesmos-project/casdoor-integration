@@ -1,8 +1,10 @@
 # Derived from Casdoor v4.15.0 conf/app.conf; modified for local integration evaluation.
 # Configure a disposable PostgreSQL database before use. Not a production recipe.
+# Secure startup reads the initial administrator password from this file.
+bootstrapAdminPasswordFile = /conf/admin-password
 appname = casdoor
 httpport = 8000
-runmode = dev
+runmode = prod
 copyrequestbody = true
 driverName = postgres
 dataSourceName = "user=casdoor password=REPLACE_WITH_PRIVATE_PASSWORD host=YOUR_DATABASE_HOST port=5432 sslmode=verify-full sslrootcert=/conf/db-ca.pem dbname=casdoor"
@@ -31,12 +33,12 @@ maxItemsForFlatMenu = 7
 enableErrorMask = false
 enableGzip = true
 inactiveTimeoutMinutes =
-ldapServerPort = 389
+ldapServerPort =
 ldapsCertId = ""
-ldapsServerPort = 636
-radiusServerPort = 1812
+ldapsServerPort =
+radiusServerPort =
 radiusDefaultOrganization = "built-in"
-radiusSecret = "secret"
+radiusSecret =
 quota = {"organization": -1, "user": -1, "application": -1, "provider": -1}
 logConfig = {"adapter":"console","level":4}
 initDataNewOnly = true

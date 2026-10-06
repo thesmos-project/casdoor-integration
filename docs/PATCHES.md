@@ -67,6 +67,17 @@ key ID. Organization administrators can keep editing an application after a
 global administrator removes a retained certificate. See
 [JWT signing-key overlap](CONFIGURATION.md#jwt-signing-key-overlap).
 
+## Start safely on a new database
+
+Upstream Casdoor creates a built-in `admin` account with the password `123` on a
+fresh database. The secure-startup patch replaces it from a bootstrap secret file
+before any listener starts and refuses to serve while it remains a default. It
+never resets a password that has already changed. It also refuses development
+mode, a default RADIUS secret and a missing initialization file, and disables the
+RADIUS server when no port is configured; an empty port previously opened a
+random public UDP port. The image enables these checks with `secureStartup=true`.
+See [secure startup](CONFIGURATION.md#initial-administrator-and-secure-startup).
+
 ## Update dependencies and distribution material
 
 Backend changes update Go dependencies and use the maintained `go-acme/lego`
@@ -91,5 +102,6 @@ SHA-256 checksums. Original Casdoor headers and authorship are preserved.
 | [Build dependencies](../patches/casdoor-build-chain-candidate.patch) | Frontend build/test dependencies. |
 | [Claim configuration](../patches/casdoor-claim-configuration-candidate.patch) | Save-time validation and selected-field application updates. |
 | [LDAP licence](../patches/casdoor-ldap-license-candidate.patch) | Author-provided MIT dependency revision. |
+| [Secure startup](../patches/casdoor-secure-startup-candidate.patch) | Bootstrap administrator password, unsafe-setting refusal and RADIUS port handling. |
 
 Before deploying or upgrading, read [version limits and compatibility changes](RELEASE-STATUS.md).
