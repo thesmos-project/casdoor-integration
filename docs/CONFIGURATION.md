@@ -115,6 +115,12 @@ the file only while the password is a default, so changing the password in the
 UI, or rotating the file, never resets the administrator's current password.
 Remove the file after first start if your deployment does not need it.
 
+Enable TOTP MFA from the account page and store the recovery code offline. A
+recovery code works once; after using it, remove and re-enroll MFA to obtain a
+new one. Five wrong passwords or codes freeze sign-in for 15 minutes by default;
+set `failedSigninLimit` and `failedSigninFrozenTime` on the application to change
+this.
+
 Secure startup also stops Casdoor when:
 
 - `runmode` is not `prod`;

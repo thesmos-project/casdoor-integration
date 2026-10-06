@@ -27,8 +27,9 @@ also refuses `runmode` other than `prod`, RADIUS with an empty or default
 secret, and a configured initialization file that is missing. See
 [secure startup](CONFIGURATION.md#initial-administrator-and-secure-startup).
 
-MFA enrollment, account recovery and abuse controls still need acceptance
-testing. With `initDataNewOnly=false`, initialization replaces defined users and
+The [recipe acceptance test](VALIDATION.md) covers TOTP MFA enrollment and
+enforcement, one-time recovery codes and sign-in lockout. Email and SMS factors
+depend on configured providers and are not covered. With `initDataNewOnly=false`, initialization replaces defined users and
 certificates on every restart; keep the image default `true`.
 
 ## Configuration and compatibility limits
@@ -83,7 +84,7 @@ relinking. Test these changes against the existing deployment before upgrading.
 
 ## Production work still required
 
-Production approval remains open for MFA/recovery and abuse-control acceptance; exact-source advisory analysis and independent security review;
+Production approval remains open for exact-source advisory analysis and independent security review;
 live protocol and key-rotation acceptance; upgrade/rollback and backup recovery;
 public HTTPS/proxy configuration and durable storage; and deployment capacity.
 Dependency and asset licensing also require review for the accepted release.

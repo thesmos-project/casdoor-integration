@@ -43,6 +43,9 @@ organization with the password from `.local/deployment/admin-password`. See
 The recipe serves plain HTTP on loopback for evaluation; do not expose it as a
 production service.
 
+`scripts/recipe-acceptance.py` runs this recipe end to end against a disposable
+PostgreSQL database with verified TLS, then removes everything it created.
+
 Stop the component with:
 
 ```sh

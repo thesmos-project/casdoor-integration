@@ -46,6 +46,8 @@ jobs:
           grep -F 'Mount a readable Casdoor configuration' .local/missing-config.log
       - name: Verify configurable runtime and restart persistence
         run: python3 scripts/smoke-image.py
+      - name: Verify the recipe with TLS PostgreSQL, secure startup and MFA
+        run: python3 scripts/recipe-acceptance.py
       - name: Record candidate image identity
         run: docker image inspect casdoor-integration:candidate --format '{{json .}}' > .local/image-inspection.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -57,6 +59,7 @@ jobs:
             .local/image-inspection.json
             .local/distribution-report.json
             .local/image-smoke.json
+            .local/recipe-acceptance.json
             .local/distribution.spdx.json
           include-hidden-files: true
           retention-days: 14

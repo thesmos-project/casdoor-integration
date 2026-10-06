@@ -13,10 +13,12 @@ compatibility with every OIDC, SAML or SCIM client.
 | Container startup | Missing mounted configuration is refused. A fresh database without a bootstrap administrator secret is refused; with one, the default password no longer signs in, and changing the secret file does not reset the password on restart. |
 | Configurable runtime | Served frontend, saved organization theme, theme persistence across restart and rejection of a protected claim override. |
 | Runtime restrictions | Nonroot execution with a read-only filesystem and dropped capabilities. |
+| Deployment recipe | [recipe-acceptance.py](../scripts/recipe-acceptance.py) runs the unchanged Compose recipe against disposable PostgreSQL with a restricted role and verified TLS: refusal without the bootstrap secret, rejection of `admin/123`, TOTP MFA enrollment and enforced second factor, wrong-code rejection, one-time recovery code, MFA and password kept across restart and secret rotation, and lockout after five wrong passwords. |
 | Publication | Registry upload probe, image signing, SPDX attestation verification and a smoke test of the pulled digest. An optional public mirror must also pass anonymous pull and signature/attestation verification. |
 
-The runtime smoke test uses a disposable SQLite database on loopback. It does
-not test the PostgreSQL deployment recipe or a complete Thesmos stack. Publication checks run when publishing; passing a source build alone
+The runtime smoke test uses a disposable SQLite database on loopback; the recipe
+acceptance test adds PostgreSQL over TLS. Both bind only to loopback and use plain
+HTTP, so they do not test a public HTTPS proxy or a complete Thesmos stack. Publication checks run when publishing; passing a source build alone
 does not establish that an image is available in a registry.
 
 The [Check candidate workflow](../.github/workflows/check.yml) produces build,
