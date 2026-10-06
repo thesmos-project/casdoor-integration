@@ -16,6 +16,7 @@ SCIM API. This version improves how Casdoor finds and updates those records:
 | Count all matching records and paginate the returned results. | The provisioner can traverse a directory without mistaking a page's length for the total. |
 | Preserve group `externalId` through creation and updates. | The provisioner can retain the source group's identity across synchronization. |
 | Map SCIM `active` to Casdoor's account state, including PATCH. | A deactivation sent by the provisioner disables the corresponding Casdoor account. |
+| Limit a full replacement (`PUT`) to the attributes SCIM maps. | Administrator status, MFA, linked sign-in providers, groups and properties survive a replacement, and a disabled account stays disabled unless the request sets `active`. |
 
 **Casdoor → Thesmos:** a provisioner reads Casdoor's SCIM Users/Groups and writes
 them to Thesmos's SCIM API. Filtered responses, correct pagination and retained
@@ -45,6 +46,8 @@ array, boolean or other JSON literal as a custom claim. This supports structured
 application authorization data alongside Casdoor's existing field mappings.
 
 Application saves validate claim names, types, JSON values and size limits.
+They also reject a claim whose value Casdoor could not read back, such as role
+names under `roles`, which Casdoor reserves for its own role objects.
 Protected protocol claims retain their issuer-controlled values. Partial updates
 preserve omitted claim settings, and custom refresh tokens carry their protocol
 claims separately from the application's custom payload.
@@ -55,11 +58,14 @@ See the [typed JWT claim example](CONFIGURATION.md#typed-jwt-claims).
 
 Authorization-code exchange checks the exact redirect URI used to issue the
 code. Introspection and refresh match the stored token's application owner,
-name and organization to the authenticated client.
+name and organization to the authenticated client. A token issued to one client
+therefore reports `active: false` when another client introspects it.
 
 Applications can also retain up to two previous JWT signing certificates for
 verification during a bounded overlap. Newly issued refresh tokens include a
-key ID. See [JWT signing-key overlap](CONFIGURATION.md#jwt-signing-key-overlap).
+key ID. Organization administrators can keep editing an application after a
+global administrator removes a retained certificate. See
+[JWT signing-key overlap](CONFIGURATION.md#jwt-signing-key-overlap).
 
 ## Update dependencies and distribution material
 

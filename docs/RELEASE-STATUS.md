@@ -50,10 +50,23 @@ Authorization-code clients must send the exact redirect URI. Codes issued before
 the binding change may require fresh login. Custom refresh tokens omit application
 custom claims; check any client that relied on those values.
 
+Introspection reports tokens as active only to the client they were issued to.
+An API that introspects tokens with its own client credentials receives
+`active: false`; let it verify JWT signatures instead, or introspect with the
+issuing client's credentials.
+
+Saving an application now rejects claims Casdoor could not read back, such as
+role names under `roles`. Rename such claims before editing an affected
+application. SCIM `PUT` requests no longer clear administrator status, MFA,
+provider links, groups or properties, and leave a disabled account disabled
+unless they set `active`.
+
 Enabling retained JWT certificates requires tokens with an authorized `kid`;
 older keyless refresh tokens may require reauthentication. Retention applies to
 Casdoor's verification policy. Application-specific JWKS still returns the current
 certificate, so relying-party key distribution needs separate configuration.
+Changing the signing algorithm during an overlap invalidates tokens signed with
+the previous algorithm.
 
 Changing an existing SAML NameID policy can require service-provider account
 relinking. Test these changes against the existing deployment before upgrading.

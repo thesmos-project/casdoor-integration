@@ -1121,12 +1121,12 @@ index 1a3cb36..3be6f3f 100644
  type HttpProvider struct {
 diff --git a/object/thesmos_saml_security_test.go b/object/thesmos_saml_security_test.go
 new file mode 100644
-index 0000000..d13a494
+index 0000000..5618221
 --- /dev/null
 +++ b/object/thesmos_saml_security_test.go
 @@ -0,0 +1,196 @@
 +// Copyright 2026 The Thesmos integration contributors.
-+// Added for the private Thesmos integration security evaluation, 2026-10-06.
++// Added for the Thesmos integration security evaluation, 2026-10-06.
 +// Licensed under the Apache License, Version 2.0 (the "License");
 +// you may not use this file except in compliance with the License.
 +// You may obtain a copy at https://www.apache.org/licenses/LICENSE-2.0

@@ -1,5 +1,5 @@
 diff --git a/object/application.go b/object/application.go
-index 09d195a..1cb83db 100644
+index caa7f94..a5634de 100644
 --- a/object/application.go
 +++ b/object/application.go
 @@ -451,6 +451,20 @@ func UpdateApplication(id string, application *Application, isGlobalAdmin bool,
@@ -23,7 +23,7 @@ index 09d195a..1cb83db 100644
  	if name != application.Name {
  		err = applicationChangeTrigger(name, application.Name)
  		if err != nil {
-@@ -490,7 +504,7 @@ func UpdateApplication(id string, application *Application, isGlobalAdmin bool,
+@@ -494,7 +508,7 @@ func UpdateApplication(id string, application *Application, isGlobalAdmin bool,
  
  	session := ormer.Engine.ID(core.PK{owner, name}).Where("organization = ?", oldApplication.Organization)
  	if len(columns) > 0 {
@@ -32,7 +32,7 @@ index 09d195a..1cb83db 100644
  	} else {
  		session = session.AllCols()
  	}
-@@ -536,6 +550,10 @@ func AddApplication(application *Application, lang string) (bool, error) {
+@@ -540,6 +554,10 @@ func AddApplication(application *Application, lang string) (bool, error) {
  		application.TokenFields = tokenFields
  	}
  
@@ -45,10 +45,10 @@ index 09d195a..1cb83db 100644
  		return false, err
 diff --git a/object/thesmos_claim_configuration.go b/object/thesmos_claim_configuration.go
 new file mode 100644
-index 0000000..044fba9
+index 0000000..0a6227b
 --- /dev/null
 +++ b/object/thesmos_claim_configuration.go
-@@ -0,0 +1,122 @@
+@@ -0,0 +1,208 @@
 +// Copyright 2026 The Thesmos integration contributors.
 +//
 +// Licensed under the Apache License, Version 2.0 (the "License");
@@ -122,6 +122,9 @@ index 0000000..044fba9
 +		if err := claimName(name); err != nil {
 +			return fmt.Errorf("tokenFields entry %d: %w", i+1, err)
 +		}
++		if err := checkClaimDecodes(name, tokenFieldSample(field)); err != nil {
++			return fmt.Errorf("tokenFields entry %d: %w", i+1, err)
++		}
 +	}
 +	for i, item := range application.TokenAttributes {
 +		if item == nil {
@@ -150,8 +153,91 @@ index 0000000..044fba9
 +		} else if item.Type == "JSON" && !json.Valid([]byte(item.Value)) {
 +			return fmt.Errorf("tokenAttributes entry %d: invalid JSON value", i+1)
 +		}
++		if err := checkClaimDecodes(item.Name, tokenAttributeSample(item)); err != nil {
++			return fmt.Errorf("tokenAttributes entry %d: %w", i+1, err)
++		}
 +	}
 +	return nil
++}
++
++// Casdoor verifies its own JWTs by decoding them into Claims, whose embedded User
++// fields encoding/json matches case-insensitively. A claim whose value cannot be
++// decoded into a same-named field would be issued, then rejected by Casdoor's own
++// introspection and token checks. Test a representative value of the issued type.
++func checkClaimDecodes(name string, value interface{}) error {
++	payload, err := json.Marshal(map[string]interface{}{name: value})
++	if err != nil {
++		return nil
++	}
++	if err := json.Unmarshal(payload, &Claims{}); err != nil {
++		return fmt.Errorf("claim %q conflicts with a Casdoor token field of a different type", name)
++	}
++	return nil
++}
++
++func tokenFieldSample(field string) interface{} {
++	switch {
++	case strings.HasPrefix(field, "Properties."), field == "signinMethod", field == "provider":
++		return "x"
++	case field == "permissionNames":
++		return []string{"x"}
++	}
++	member, _ := reflect.TypeOf(User{}).FieldByName(field)
++	return claimSample(member.Type, 0).Interface()
++}
++
++func tokenAttributeSample(item *JwtItem) interface{} {
++	if item.Category == "Existing Field" {
++		switch {
++		case item.Value == "Roles", item.Value == "Permissions", item.Value == "permissionNames":
++			return []string{"x"}
++		case strings.HasPrefix(item.Value, "Properties."):
++			return "x"
++		}
++		return tokenFieldSample(item.Value)
++	}
++	switch item.Type {
++	case "JSON":
++		var value interface{}
++		_ = json.Unmarshal([]byte(item.Value), &value)
++		return value
++	case "String":
++		return "x"
++	}
++	return []string{"x"}
++}
++
++// claimSample builds a nonempty value so element and map types are exercised.
++func claimSample(kind reflect.Type, depth int) reflect.Value {
++	value := reflect.New(kind).Elem()
++	if depth > 3 {
++		return value
++	}
++	switch kind.Kind() {
++	case reflect.String:
++		value.SetString("x")
++	case reflect.Bool:
++		value.SetBool(true)
++	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
++		value.SetInt(1)
++	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
++		value.SetUint(1)
++	case reflect.Float32, reflect.Float64:
++		value.SetFloat(1)
++	case reflect.Slice:
++		if kind.Elem().Kind() != reflect.Uint8 {
++			value = reflect.Append(reflect.MakeSlice(kind, 0, 1), claimSample(kind.Elem(), depth+1))
++		}
++	case reflect.Map:
++		if kind.Key().Kind() == reflect.String {
++			value = reflect.MakeMap(kind)
++			value.SetMapIndex(reflect.ValueOf("x").Convert(kind.Key()), claimSample(kind.Elem(), depth+1))
++		}
++	case reflect.Ptr:
++		value = reflect.New(kind.Elem())
++		value.Elem().Set(claimSample(kind.Elem(), depth+1))
++	}
++	return value
 +}
 +
 +// Partial updates validate the effective claim configuration, without requiring
@@ -173,10 +259,10 @@ index 0000000..044fba9
 +}
 diff --git a/object/thesmos_claim_configuration_test.go b/object/thesmos_claim_configuration_test.go
 new file mode 100644
-index 0000000..8027744
+index 0000000..9b352ce
 --- /dev/null
 +++ b/object/thesmos_claim_configuration_test.go
-@@ -0,0 +1,192 @@
+@@ -0,0 +1,217 @@
 +// Copyright 2026 The Thesmos integration contributors.
 +//
 +// Licensed under the Apache License, Version 2.0 (the "License");
@@ -194,6 +280,8 @@ index 0000000..8027744
 +package object
 +
 +import (
++	"encoding/json"
++
 +	"github.com/xorm-io/xorm"
 +	"reflect"
 +	"strings"
@@ -214,7 +302,8 @@ index 0000000..8027744
 +		{"array template", attribute("groups", "Static Value", "Array", "$user.groups"), true},
 +		{"boolean field", attribute("email_verified", "Existing Field", "String", "EmailVerified"), true},
 +		{"field property", attribute("custom", "Existing Field", "String", "Properties.my_key"), true},
-+		{"default category and type", attribute("custom", "", "", "fixed"), true},
++		{"default category and type", attribute("custom_claim", "", "", "fixed"), true},
++		{"array as string user field", attribute("custom", "", "", "fixed"), false},
 +		{"selected fields", &Application{TokenFields: []string{"Email", "Roles", "permissionNames", "signinMethod", "provider", "Properties.tenant"}}, true},
 +		{"null row", &Application{TokenAttributes: []*JwtItem{nil}}, false},
 +		{"empty name", attribute("", "Static Value", "String", "fixed"), false},
@@ -236,6 +325,15 @@ index 0000000..8027744
 +		{"oversized value", attribute("custom", "Static Value", "String", strings.Repeat("a", 8193)), false},
 +		{"too many fields", &Application{TokenFields: make([]string, 65)}, false},
 +		{"too many attributes", &Application{TokenAttributes: make([]*JwtItem, 65)}, false},
++		{"role names as user roles", attribute("roles", "Static Value", "Array", "$user.roles"), false},
++		{"case-insensitive user field", attribute("ROLES", "Static Value", "String", "reader"), false},
++		{"existing role names as user roles", attribute("roles", "Existing Field", "Array", "Roles"), false},
++		{"string property as user groups", &Application{TokenFields: []string{"Properties.groups"}}, false},
++		{"JSON object as user groups", attribute("groups", "Static Value", "JSON", `{"reader":true}`), false},
++		{"string as boolean user field", attribute("isAdmin", "Static Value", "String", "true"), false},
++		{"JSON array as user groups", attribute("groups", "Static Value", "JSON", `["reader"]`), true},
++		{"string as user name", attribute("name", "Static Value", "String", "$user.name"), true},
++		{"existing field under its own name", attribute("email", "Existing Field", "String", "Email"), true},
 +	}
 +	for _, name := range []string{"iss", "sub", "aud", "exp", "nbf", "iat", "jti", "tokenType", "azp", "nonce", "scope", "cnf"} {
 +		cases = append(cases, struct {
@@ -249,11 +347,24 @@ index 0000000..8027744
 +			valid bool
 +		}{"reserved property " + name, &Application{TokenFields: []string{"Properties." + name}}, false})
 +	}
++	// Every accepted configuration must yield tokens Casdoor can decode again.
++	user := &User{Name: "reader", Email: "reader@example.invalid", Groups: []string{"evaluation/readers"},
++		Roles: []*Role{{Name: "reader"}}, Permissions: []*Permission{{Name: "read"}}, Properties: map[string]string{"tenant": "a", "my_key": "b"}}
 +	for _, tc := range cases {
 +		t.Run(tc.name, func(t *testing.T) {
 +			err := validateCustomClaimConfiguration(tc.app)
 +			if (err == nil) != tc.valid {
 +				t.Fatalf("valid=%v error=%v", tc.valid, err)
++			}
++			if err != nil {
++				return
++			}
++			payload, err := json.Marshal(getClaimsCustom(Claims{User: user}, tc.app.TokenFields, tc.app.TokenAttributes))
++			if err != nil {
++				t.Fatal(err)
++			}
++			if err := json.Unmarshal(payload, &Claims{}); err != nil {
++				t.Fatalf("accepted configuration issues a token Casdoor cannot decode: %v", err)
 +			}
 +		})
 +	}

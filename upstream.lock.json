@@ -6,12 +6,12 @@
   "patches": [
     {
       "path": "patches/casdoor-integration.patch",
-      "sha256": "ac2a64ec604c02fd6a39eb1348d195886329171bd7f7b2704ffec42bb48a6044",
+      "sha256": "b17554863595d8772c50d0f4cd082af30091c35856850a21bd40322625379cae",
       "purpose": "SCIM behavior, typed JWT claims, persistent SAML NameIDs, OAuth redirect binding and retained signing-key support."
     },
     {
       "path": "patches/casdoor-security-candidate.patch",
-      "sha256": "0f1e487dc18ef63cded6e09f7b47c9cb70b5043e4128ed23db07367a65b78832",
+      "sha256": "d61aeb67dfb5dda52548ccb8c0b693e2027fb3f93eb1e69b07df56395969b033",
       "purpose": "Go dependency updates, maintained ACME implementation and SAML regression coverage."
     },
     {
@@ -26,7 +26,7 @@
     },
     {
       "path": "patches/casdoor-claim-configuration-candidate.patch",
-      "sha256": "ebaaec511b8f6d68db1ffb507078a00fbf06f1bf604b17d7b26a3ddab7cadcaa",
+      "sha256": "060f6bead8d9f1ffb369befc5b35b25da0be45bd9b44667396a31482fecc0b0e",
       "purpose": "Validate claim configuration and restrict partial application writes."
     },
     {

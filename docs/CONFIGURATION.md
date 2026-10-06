@@ -40,6 +40,9 @@ Content-Type: application/scim+json
 ```
 
 The active-state patch applies that boolean to Casdoor's forbidden-user state.
+A full replacement (`PUT`) updates the attributes SCIM maps and retains
+Casdoor-only account state; include `active` to change whether the account is
+enabled.
 The group identifier patch retains the source's `externalId`. The lookup and
 pagination patches help the provisioner locate and reconcile existing records.
 
@@ -58,6 +61,15 @@ Casdoor SCIM endpoints for both receiving writes and serving reads.
 Users accept single string equality filters on `userName` and `externalId`.
 Groups accept them on `displayName`. Pagination reports the matching total,
 with a service-provider maximum of 100 results per page.
+
+`userName` and `displayName` match case-insensitively. On PostgreSQL, add
+expression indexes for large directories so these lookups avoid full scans
+(table names shown for the default empty `tableNamePrefix`):
+
+```sql
+CREATE INDEX user_lower_name ON "user" (LOWER(name));
+CREATE INDEX group_lower_display_name ON "group" (LOWER(display_name));
+```
 
 ### Import remote users with Casdoor's syncer
 
@@ -135,7 +147,10 @@ administrators should select claim fields and values. See [version limitations](
 
 Configuration limits: at most 64 `tokenFields` and 64 `tokenAttributes`, claim
 names of 1–256 bytes, and attribute values up to 8192 bytes. Invalid JSON,
-duplicate names and protected protocol names are rejected on save. Protected
+duplicate names and protected protocol names are rejected on save. A name that
+matches a Casdoor user field, compared case-insensitively, must carry a value
+of that field's type: `roles` must hold role objects, so emit role names under
+another name such as `role_names`. Protected
 names are `iss`, `sub`, `aud`, `exp`, `nbf`, `iat`, `jti`, `tokenType`, `azp`,
 `nonce`, `scope` and `cnf`. Custom refresh tokens retain protocol claims without
 the application's custom claim payload.
@@ -164,6 +179,10 @@ At most two previous certificates are allowed, with deadlines no more than
 24 hours ahead. They authorize verification only; issuance uses the current
 certificate. With this option enabled, incoming JWTs need an authorized `kid`
 and the application's signing algorithm. Expired or removed certificates no
-longer authorize verification. Without it, the existing single-key behavior is
+longer authorize verification. Organization administrators can still save the
+application after a retained certificate is removed; the next global
+administrator save must remove the stale entry. Keep the signing algorithm
+unchanged during an overlap, because older tokens must use the application's
+current algorithm. Without it, the existing single-key behavior is
 preserved. Configure relying-party key distribution separately; see the
 [rotation and upgrade limits](RELEASE-STATUS.md#upgrade-considerations).

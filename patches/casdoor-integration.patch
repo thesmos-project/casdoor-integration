@@ -126,7 +126,7 @@ index 689aa67..ce3b0be 100644
  	Scope               string `json:"scope"`
  	Nonce               string `json:"nonce"`
 diff --git a/object/application.go b/object/application.go
-index 2e3582f..09d195a 100644
+index 2e3582f..caa7f94 100644
 --- a/object/application.go
 +++ b/object/application.go
 @@ -1,4 +1,5 @@
@@ -260,17 +260,21 @@ index 2e3582f..09d195a 100644
  	}
  
  	application.Owner = owner
-@@ -476,6 +481,9 @@ func UpdateApplication(id string, application *Application, isGlobalAdmin bool,
+@@ -476,6 +481,13 @@ func UpdateApplication(id string, application *Application, isGlobalAdmin bool,
  		return false, err
  	}
  
-+	if err := validateRetainedSigningCerts(application, time.Now()); err != nil {
-+		return false, err
++	// Organization administrators cannot change the retained policy, so a
++	// certificate later removed by a global administrator must not block their edits.
++	if isGlobalAdmin {
++		if err := validateRetainedSigningCerts(application, time.Now()); err != nil {
++			return false, err
++		}
 +	}
  	for _, providerItem := range application.Providers {
  		providerItem.Provider = nil
  	}
-@@ -502,6 +510,9 @@ func AddApplication(application *Application, lang string) (bool, error) {
+@@ -502,6 +514,9 @@ func AddApplication(application *Application, lang string) (bool, error) {
  	if application.Organization == "" {
  		application.Organization = "built-in"
  	}
@@ -340,10 +344,10 @@ index 978dafd..9ee1cb2 100644
  	}
 diff --git a/object/thesmos_integration_test.go b/object/thesmos_integration_test.go
 new file mode 100644
-index 0000000..e380b3a
+index 0000000..29d251e
 --- /dev/null
 +++ b/object/thesmos_integration_test.go
-@@ -0,0 +1,338 @@
+@@ -0,0 +1,375 @@
 +// Copyright 2026 The Thesmos integration contributors.
 +// Modified for the Thesmos integration evaluation, 2026-10-06.
 +//
@@ -680,6 +684,43 @@ index 0000000..e380b3a
 +	}
 +	if value, _ := getSamlNameId(&Application{}, &User{Name: "upstream-default"}); value != "upstream-default" {
 +		t.Fatal("upstream default changed without opt-in")
++	}
++}
++
++func TestEvaluationRemovedRetainedCertDoesNotBlockOrganizationEdits(t *testing.T) {
++	engine, err := xorm.NewEngine("sqlite", t.TempDir()+"/retained.sqlite")
++	if err != nil {
++		t.Fatal(err)
++	}
++	previous := ormer
++	ormer = &Ormer{Engine: engine}
++	t.Cleanup(func() { ormer = previous; engine.Close() })
++	if err := engine.Sync2(&Application{}, &Organization{}, &Provider{}, &Cert{}); err != nil {
++		t.Fatal(err)
++	}
++	if _, err := engine.Insert(&Cert{Owner: "admin", Name: "current", Scope: "JWT", Certificate: "current"}); err != nil {
++		t.Fatal(err)
++	}
++	existing := &Application{Owner: "admin", Name: "client", Organization: "tenant", ClientId: "client", Cert: "current",
++		RetainedSigningCerts: []*RetainedSigningCert{{Cert: "admin/removed", ExpiresAt: time.Now().Add(time.Hour).Unix()}}}
++	if _, err := engine.Insert(existing); err != nil {
++		t.Fatal(err)
++	}
++	edit := *existing
++	edit.DisplayName = "Organization edit"
++	edit.RetainedSigningCerts = nil
++	if _, err := UpdateApplication("admin/client", &edit, false, "en", nil); err != nil {
++		t.Fatalf("organization edit blocked by removed retained certificate: %v", err)
++	}
++	var stored Application
++	if found, err := engine.Where("owner=? AND name=?", "admin", "client").Get(&stored); err != nil || !found ||
++		stored.DisplayName != "Organization edit" || !reflect.DeepEqual(stored.RetainedSigningCerts, existing.RetainedSigningCerts) {
++		t.Fatal("organization edit did not retain the global retained-certificate policy")
++	}
++	global := stored
++	global.DisplayName = "Global edit"
++	if _, err := UpdateApplication("admin/client", &global, true, "en", nil); err == nil {
++		t.Fatal("global administrator saved a policy naming a removed certificate")
 +	}
 +}
 diff --git a/object/token.go b/object/token.go
@@ -1297,10 +1338,10 @@ index b234567..117c334 100644
  		Name:        optional.NewString("User"),
 diff --git a/scim/thesmos_integration_test.go b/scim/thesmos_integration_test.go
 new file mode 100644
-index 0000000..0a4b64b
+index 0000000..67b247e
 --- /dev/null
 +++ b/scim/thesmos_integration_test.go
-@@ -0,0 +1,87 @@
+@@ -0,0 +1,114 @@
 +// Copyright 2026 The Thesmos integration contributors.
 +// Modified for the Thesmos integration evaluation, 2026-10-05.
 +//
@@ -1388,8 +1429,35 @@ index 0000000..0a4b64b
 +		t.Fatal("absent externalId was advertised")
 +	}
 +}
++
++func TestEvaluationSCIMReplacementRetainsUnmappedState(t *testing.T) {
++	old := &object.User{Owner: "evaluation", Name: "reader", Id: "stable-id", DisplayName: "Reader", Email: "old@example.invalid",
++		IsForbidden: true, IsAdmin: true, Properties: map[string]string{"tenant": "a"}, Groups: []string{"evaluation/readers"}, Hash: "retained"}
++	attrs := scim.ResourceAttributes{"userName": "reader", "displayName": "Renamed", UserExtensionKey: map[string]interface{}{"organization": "evaluation"}}
++	replacement, err := resource2user(attrs)
++	if err != nil {
++		t.Fatal(err)
++	}
++	user := mergeScimUserReplacement(old, replacement, attrs)
++	if !user.IsForbidden || !user.IsAdmin || user.Id != "stable-id" || user.Properties["tenant"] != "a" || len(user.Groups) != 1 || user.Hash != "retained" {
++		t.Fatal("replacement without active changed unmapped account state")
++	}
++	if user.DisplayName != "Renamed" || user.Email != "" {
++		t.Fatal("replacement did not apply SCIM-mapped attributes")
++	}
++	attrs["active"] = true
++	if replacement, err = resource2user(attrs); err != nil {
++		t.Fatal(err)
++	}
++	if mergeScimUserReplacement(old, replacement, attrs).IsForbidden {
++		t.Fatal("explicit active=true did not enable the account")
++	}
++	if !old.IsForbidden || old.DisplayName != "Reader" {
++		t.Fatal("replacement modified the stored user value")
++	}
++}
 diff --git a/scim/user_handler.go b/scim/user_handler.go
-index 830f7af..da774c7 100644
+index 830f7af..c920b9e 100644
 --- a/scim/user_handler.go
 +++ b/scim/user_handler.go
 @@ -1,4 +1,5 @@
@@ -1450,7 +1518,55 @@ index 830f7af..da774c7 100644
  		Resources:    resources,
  	}, nil
  }
-@@ -197,6 +196,12 @@ func UpdateScimUserByPatchOperation(req *http.Request, id string, ops []scim.Pat
+@@ -167,17 +166,43 @@ func UpdateScimUser(req *http.Request, id string, r *scim.Resource) error {
+ 	if err = checkOrganization(req, newUser.Owner); err != nil {
+ 		return err
+ 	}
+-	_, err = object.UpdateUser(oldUser.GetId(), newUser, nil, true)
++	user := mergeScimUserReplacement(oldUser, newUser, r.Attributes)
++	_, err = object.UpdateUser(oldUser.GetId(), user, nil, true)
+ 	if err != nil {
+ 		return err
+ 	}
+ 
+-	r.ID = newUser.Id
+-	r.ExternalID = buildExternalId(newUser)
+-	r.Meta = buildMeta(newUser)
++	r.ID = user.Id
++	r.ExternalID = buildExternalId(user)
++	r.Meta = buildMeta(user)
+ 	return nil
+ }
+ 
++// mergeScimUserReplacement applies a SCIM PUT to the attributes SCIM maps. State
++// that SCIM does not represent, such as administrator status, MFA, provider links,
++// groups and properties, is retained. Account state changes only with "active".
++func mergeScimUserReplacement(oldUser, replacement *object.User, attrs scim.ResourceAttributes) *object.User {
++	user := *oldUser
++	user.Owner = replacement.Owner
++	user.Name = replacement.Name
++	user.ExternalId = replacement.ExternalId
++	user.DisplayName = replacement.DisplayName
++	user.Homepage = replacement.Homepage
++	user.Type = replacement.Type
++	user.FirstName = replacement.FirstName
++	user.LastName = replacement.LastName
++	user.Email = replacement.Email
++	user.Phone = replacement.Phone
++	user.Avatar = replacement.Avatar
++	user.Location = replacement.Location
++	user.Region = replacement.Region
++	user.CountryCode = replacement.CountryCode
++	if _, ok := attrs["active"]; ok {
++		user.IsForbidden = replacement.IsForbidden
++	}
++	return &user
++}
++
+ // https://datatracker.ietf.org/doc/html/rfc7644#section-3.5.2 Modifying with PATCH
+ func UpdateScimUserByPatchOperation(req *http.Request, id string, ops []scim.PatchOperation) (r scim.Resource, err error) {
+ 	user, err := getScopedUser(req, id)
+@@ -197,6 +222,12 @@ func UpdateScimUserByPatchOperation(req *http.Request, id string, ops []scim.Pat
  		}
  		// PatchOperationAdd and PatchOperationReplace is same in Casdoor, just replace the value
  		switch op.Path.String() {
