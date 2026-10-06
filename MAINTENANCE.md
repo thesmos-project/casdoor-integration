@@ -31,12 +31,14 @@ review and, where applicable, coordinated disclosure before public inclusion.
 Once the complete build is accepted, the owner supplies:
 
 - `REGISTRY_URL`: registry host, optionally including its port, without a URL scheme.
-- `REGISTRY_IMAGE`: full image repository path, including the registry host.
+- `REGISTRY_IMAGE`: an image name, namespace/name, or full image repository path.
+  A relative name is prefixed with `REGISTRY_URL`.
 - `REGISTRY_USERNAME`: registry login identity, stored as an Actions secret.
 - `REGISTRY_PASSWORD`: registry token or password, stored as an Actions secret.
 
 Use Actions variables for the two non-secret values and Actions secrets for the
-credentials. Prefer a dedicated account/token with the minimum required access.
+credentials. Organization settings can be shared with this repository; the release
+environment can override them when needed. Prefer a dedicated account/token with the minimum required access.
 If the registry supports federation, short-lived credentials are preferable.
 Never copy credentials into build arguments, Dockerfiles, generated images or
 public build logs. Pull-request builds must not receive publishing credentials.

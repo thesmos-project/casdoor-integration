@@ -34,22 +34,7 @@ jobs:
       - name: Validate registry settings and export pinned build inputs
         run: |
           python3 scripts/validate-project.py --release
-          python3 - <<'PY'
-          import json, os, re
-          from pathlib import Path
-          host = os.environ['REGISTRY_URL']
-          image = os.environ['REGISTRY_IMAGE']
-          if not re.fullmatch(r'[a-z0-9.-]+(?::[0-9]+)?', host):
-              raise ValueError('Set REGISTRY_URL to a registry hostname, optionally with a port')
-          if not image.startswith(host + '/') or not re.fullmatch(r'[a-z0-9./:_-]+', image) or ':' in image[len(host)+1:]:
-              raise ValueError('Set REGISTRY_IMAGE to the full image repository path, without a tag')
-          build = json.loads(Path('build.lock.json').read_text())
-          source = json.loads(Path('upstream.lock.json').read_text())
-          values = {'image_tag': image + ':' + build['version'], 'version': build['version'], 'upstream_commit': source['commit'], **build}
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              for name, value in values.items():
-                  output.write(f'{name}={value}\n')
-          PY
+          python3 scripts/registry-settings.py
         id: inputs
       - name: Prepare exact source
         run: python3 scripts/prepare-source.py
@@ -82,9 +67,10 @@ jobs:
             PRODUCTION_APPROVED=true
       - name: Sign and verify exact image digest
         env:
+          IMAGE_REPOSITORY: ${{ steps.inputs.outputs.image }}
           IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
           SIGNING_IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/publish.yml@${{ github.ref }}
         run: |
-          cosign sign --yes "$REGISTRY_IMAGE@$IMAGE_DIGEST"
-          cosign verify --certificate-identity "$SIGNING_IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com "$REGISTRY_IMAGE@$IMAGE_DIGEST"
-          printf 'Published image: `%s@%s`\n' "$REGISTRY_IMAGE" "$IMAGE_DIGEST" >> "$GITHUB_STEP_SUMMARY"
+          cosign sign --yes "$IMAGE_REPOSITORY@$IMAGE_DIGEST"
+          cosign verify --certificate-identity "$SIGNING_IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com "$IMAGE_REPOSITORY@$IMAGE_DIGEST"
+          printf 'Published image: `%s@%s`\n' "$IMAGE_REPOSITORY" "$IMAGE_DIGEST" >> "$GITHUB_STEP_SUMMARY"

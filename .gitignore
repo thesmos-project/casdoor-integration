@@ -2,6 +2,7 @@
 .env.*
 !.env.example
 .local/
+__pycache__/
 upstream/
 data/
 *.key
