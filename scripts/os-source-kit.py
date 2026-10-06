@@ -87,7 +87,8 @@ def main():
         # Abuild evaluates its own pinned recipe in an isolated container. No credentials enter it.
         # SRCDEST retains the full verified source archives alongside patches/configuration.
         subprocess.run(["docker", "run", "--rm", "--entrypoint", "/bin/sh", "--workdir", "/package",
-                        "--env", "SRCDEST=/package/distfiles", "--volume", f"{directory}:/package:rw",
+                        "--env", "SRCDEST=/package/distfiles", "--env", "DISTFILES_MIRROR=https://distfiles.alpinelinux.org/distfiles/v3.24",
+                        "--volume", f"{directory}:/package:rw",
                         lock["base_image"], "-ec", "apk add --no-cache abuild >/dev/null; abuild -F fetch; abuild -F verify; if [ -d /package/src ]; then find /package/src -type l -delete; fi"], check=True)
         for file in directory.rglob("*"):
             if file.is_symlink():

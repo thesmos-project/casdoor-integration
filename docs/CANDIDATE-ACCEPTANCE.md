@@ -28,6 +28,8 @@ This is not an independent security/legal review or production approval.
 - Negative checks reject altered notices, missing covered source archives, changed
   accepted build inputs and registry authentication/network errors mistaken for
   an absent version tag. Stable publishing rejects RC versions.
+- Fresh source preparation uses the official Alpine v3.24 distfiles mirror, with
+  original recipe checksums retained; an uncached apk-tools archive passed this check.
 - Publication scan found no protected fixture values or private checkout paths.
 
 ## Distribution limits
