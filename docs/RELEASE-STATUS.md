@@ -6,7 +6,7 @@
 | Source | Casdoor `v4.15.0` plus the [seven published patches](PATCHES.md) |
 | Platform | `linux/amd64` |
 | Local use | Buildable evaluation image and loopback Compose recipe |
-| Registry distribution | `rc.2` publication pending. Signed `rc.1` image, without secure startup: `registry.thesmos.dev/thesmos/casdoor@sha256:afe7e0c8ece067a9b4ef4cf38e8e9cf108c5b7b4b96b97f335aa005b338f60d4` |
+| Registry distribution | Signed evaluation image `registry.thesmos.dev/thesmos/casdoor@sha256:fc471613688a689838e329630c508aa8902e601a6fd16967918e9d565e59bb41` |
 | Production release | None; this candidate is not approved for production |
 
 The [README](../README.md) describes the available capabilities. The

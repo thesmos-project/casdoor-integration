@@ -56,7 +56,7 @@ The external database is not removed by this command. To run the published
 evaluation image instead of a local build, set `CASDOOR_IMAGE` to its digest:
 
 ```sh
-export CASDOOR_IMAGE=registry.thesmos.dev/thesmos/casdoor@sha256:afe7e0c8ece067a9b4ef4cf38e8e9cf108c5b7b4b96b97f335aa005b338f60d4
+export CASDOOR_IMAGE=registry.thesmos.dev/thesmos/casdoor@sha256:fc471613688a689838e329630c508aa8902e601a6fd16967918e9d565e59bb41
 ```
 
 `CASDOOR_PORT` changes the host port; update the configured origin to
