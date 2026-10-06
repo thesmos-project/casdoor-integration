@@ -1,7 +1,8 @@
 # What the Casdoor patches bring
 
-The patches help Casdoor work with Thesmos for sign-in, identity provisioning
-and application authorization. The base is Casdoor `v4.15.0`, commit
+The patches improve Casdoor's SCIM provisioning, SAML identity and JWT/OAuth
+behavior for compatible applications and provisioners. Thesmos is the integration
+example below. The base is Casdoor `v4.15.0`, commit
 `2301694036cbdcf932b3b1cbef02fb61d9820429`.
 
 ## Provision users and groups through SCIM
@@ -14,7 +15,7 @@ SCIM API. This version improves how Casdoor finds and updates those records:
 | Apply equality filters to user/group lookups. | The provisioner can find an existing account or group before creating or updating it. |
 | Count all matching records and paginate the returned results. | The provisioner can traverse a directory without mistaking a page's length for the total. |
 | Preserve group `externalId` through creation and updates. | The provisioner can retain the source group's identity across synchronization. |
-| Map SCIM `active` to Casdoor's account state, including PATCH. | A deactivation sent from Thesmos disables the corresponding Casdoor account. |
+| Map SCIM `active` to Casdoor's account state, including PATCH. | A deactivation sent by the provisioner disables the corresponding Casdoor account. |
 
 **Casdoor → Thesmos:** a provisioner reads Casdoor's SCIM Users/Groups and writes
 them to Thesmos's SCIM API. Filtered responses, correct pagination and retained

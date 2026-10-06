@@ -1,14 +1,25 @@
-# Casdoor integration for Thesmos
+# Casdoor integration build
 
-Use Casdoor for Thesmos sign-in and user/group provisioning, with configurable
-branding and JWT claims. This repository supplies the Casdoor patches, image
-builder and a local Compose recipe.
+A patched Casdoor build for OIDC/SAML sign-in, SCIM user/group provisioning
+and configurable JWT claims. This repository supplies the patches, image builder
+and a local Compose recipe.
 
 Casdoor is developed by the [Casdoor project and its contributors](https://github.com/casdoor/casdoor).
 Thesmos maintains these integration changes independently. The original authorship,
 licences and notices are preserved.
 
-## What you can use it for
+## Who benefits from these patches
+
+Applications and provisioners that use Casdoor's OIDC, SAML or SCIM interfaces
+can benefit from these changes: reliable SCIM lookups and account updates,
+stable SAML identity, structured JWT claims and stricter token/client checks.
+These behaviors use standard Casdoor configuration and protocol endpoints.
+
+Thesmos is the integration example used here. To use another application,
+configure its client, redirect URI, SAML settings or SCIM mappings as appropriate.
+The patches and builder are available for reuse under their published licences.
+
+## Thesmos integration examples
 
 | Your task | What the integration provides |
 | --- | --- |

@@ -6,6 +6,10 @@ is supplied at deployment. See the [local Compose recipe](../recipes/README.md)
 for the required PostgreSQL configuration and [release limitations](RELEASE-STATUS.md)
 before exposing any endpoint.
 
+The same Casdoor settings apply when integrating another application. Configure
+its client credentials, redirect URI, SAML service-provider settings or SCIM
+mappings. The Thesmos examples below describe one integration of these interfaces.
+
 ## SCIM provisioning
 
 The Thesmos directory SCIM API requires Enterprise. Use a SCIM provisioner
