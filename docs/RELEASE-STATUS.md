@@ -32,7 +32,9 @@ Neither setting alone provides production-safe initialization.
 - JWT customization uses supported field mappings and literal values; there is
   no lambda or arbitrary script execution.
 - SCIM filters support the equality subset listed in [configuration](CONFIGURATION.md).
-  Bidirectional provisioning needs an explicit authority and loop prevention.
+  The syncer imports remote users only; it cannot push users or import groups.
+  A separate provisioner is needed for Casdoor-to-remote writes, with an explicit
+  authority and loop prevention when flows run in both directions.
 - JWT certificate retention does not add retained keys to application-specific
   JWKS or implement SAML certificate rollover.
 - The Compose recipe starts Casdoor only and has no production HTTPS endpoint,

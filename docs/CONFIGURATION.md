@@ -115,11 +115,17 @@ parties need verified key-distribution and rotation configuration.
 
 ## SCIM provisioning
 
-Configure Casdoor's SCIM server when another system provisions Casdoor, or its
-SCIM syncer when Casdoor provisions another system. Select one authoritative
-writer for a given user/group scope and configure credentials, organization and
-attribute mappings. Enabling both directions does not define conflict resolution
-or prevent synchronization loops.
+Casdoor's SCIM server accepts provisioning of Users and Groups into Casdoor.
+Its SCIM syncer instead reads Users from a remote SCIM server and imports them
+into Casdoor. In this pinned version, the syncer's add/update methods reject
+remote writes and its group/membership import methods are unimplemented. The
+request-lifetime patch makes the read requests usable; it does not add those
+missing operations.
+
+Provisioning from Casdoor into another system requires a separate provisioner,
+which is not included here. Choose an authoritative writer for each user/group
+scope and configure credentials, organization and mappings. A deployment with
+flows in both directions also needs conflict resolution and loop prevention.
 
 This version accepts single string equality filters for Users (`userName`,
 `externalId`) and Groups (`displayName`). Other operators and compound filters
@@ -127,6 +133,6 @@ are rejected. Group external IDs are retained, but are not a supported group
 list-filter field. Pagination reports the matching total, with a service-provider
 maximum of 100 results per page.
 
-SCIM `active: false` maps to Casdoor's forbidden-user state. It cannot immediately
+On the SCIM server, `active: false` maps to Casdoor's forbidden-user state. It cannot immediately
 invalidate tokens at clients that only verify JWT signatures offline; configure
 token lifetime and the client's revocation/introspection behavior accordingly.

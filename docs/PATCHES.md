@@ -14,7 +14,7 @@ Patch: [casdoor-integration.patch](../patches/casdoor-integration.patch).
 
 | Reason | Change in this version | Scope or limitation |
 | --- | --- | --- |
-| Outbound SCIM requests were canceled when the request-building helper returned, before the HTTP client could send them. | Remove the prematurely canceled context; keep the caller's 30-second HTTP client timeout. | Applies to Casdoor's outbound SCIM syncer. |
+| Outbound SCIM requests were canceled when the request-building helper returned, before the HTTP client could send them. | Remove the prematurely canceled context; keep the caller's 30-second HTTP client timeout. | Applies to outbound HTTP requests used to import remote users into Casdoor; it does not add SCIM push support. |
 | Provisioners need filtered lookups and a total count independent of the returned page. | Apply supported equality filters to both count and page queries; return the full matching total. | Users: `userName eq` and `externalId eq`. Groups: `displayName eq`. Unsupported expressions are rejected. |
 | A provisioning system needs to retain its own identifier for a group. | Store and return group `externalId`, including updates. | Does not add a group `externalId` list filter. |
 | SCIM deactivation needs to affect Casdoor's account state. | Map the boolean `active` attribute to Casdoor's forbidden-user state on import/update, including PATCH. | Does not revoke an already-issued JWT at a relying party that validates it offline. |

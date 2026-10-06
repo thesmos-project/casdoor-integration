@@ -25,12 +25,13 @@ See [release status and limitations](docs/RELEASE-STATUS.md).
 | OIDC | Casdoor provides OIDC for application login, including the Community integration use case. The patches bind authorization-code exchange to its redirect URI and bind introspection/refresh to the authenticated application. |
 | JWT claims | Casdoor's custom field mappings plus literal JSON attributes, protected protocol claims and validation before saving configuration. There is no JWT lambda or script runtime. |
 | SAML | Casdoor provides SAML; the patches add an optional persistent NameID based on the user's ID. The Thesmos SAML use case requires Enterprise. |
-| SCIM | Casdoor's SCIM server and outbound syncer, with fixes for outbound request lifetime, supported equality filters, pagination, group external IDs and user active-state updates. |
+| SCIM | Casdoor's SCIM server for Users/Groups and a remote-user import syncer. Fixes cover import-request lifetime, server filters/pagination, group external IDs and user active-state updates. The syncer cannot push users or import groups. |
 | Container | Rebuilt Go backend and frontend, nonroot execution, required mounted configuration, dependency notices and corresponding source archives. |
 
 Protocol support in the source does not certify every client or deployment.
-SCIM authority and mappings must be configured for each direction; this repository
-does not enable automatic bidirectional synchronization. See [patch reasons and
+SCIM authority and mappings must be configured for the chosen flow. Provisioning
+from Casdoor into another system needs a separate provisioner; this repository
+does not provide that component or automatic bidirectional synchronization. See [patch reasons and
 behavior](docs/PATCHES.md) and [configuration examples](docs/CONFIGURATION.md).
 
 ## Build and try it locally
