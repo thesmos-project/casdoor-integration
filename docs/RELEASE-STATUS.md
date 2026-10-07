@@ -6,7 +6,7 @@
 | Source | Casdoor `v4.15.0` plus the [seven published patches](PATCHES.md) |
 | Platform | `linux/amd64` |
 | Deployment | Compose recipe with an optional Caddy HTTPS overlay |
-| Registry distribution | `rc.3` publication pending. Latest signed image, `rc.2`: `registry.thesmos.dev/thesmos/casdoor@sha256:fc471613688a689838e329630c508aa8902e601a6fd16967918e9d565e59bb41` |
+| Registry distribution | Signed evaluation image `registry.thesmos.dev/thesmos/casdoor@sha256:8f0b2b28fe0741635f52f42bc79139242a1560db29042c4d27414ec4c347106a` |
 | Production release | None; this candidate is not approved for production |
 
 The [README](../README.md) describes the available capabilities. The

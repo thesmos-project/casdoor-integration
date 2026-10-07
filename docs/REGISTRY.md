@@ -1,6 +1,6 @@
 # Registry publishing and image verification
 
-The current evaluation image is `registry.thesmos.dev/thesmos/casdoor@sha256:fc471613688a689838e329630c508aa8902e601a6fd16967918e9d565e59bb41`.
+The current evaluation image is `registry.thesmos.dev/thesmos/casdoor@sha256:8f0b2b28fe0741635f52f42bc79139242a1560db29042c4d27414ec4c347106a`.
 This guide describes how to verify it and how maintainers publish new versions.
 Local builds do not require registry credentials.
 
@@ -11,7 +11,7 @@ evaluation image, set:
 
 ```sh
 IMAGE_REPOSITORY=registry.thesmos.dev/thesmos/casdoor
-IMAGE_DIGEST=sha256:fc471613688a689838e329630c508aa8902e601a6fd16967918e9d565e59bb41
+IMAGE_DIGEST=sha256:8f0b2b28fe0741635f52f42bc79139242a1560db29042c4d27414ec4c347106a
 ```
 
 Then run:

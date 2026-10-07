@@ -17,7 +17,7 @@ import time
 from acceptance_fixture import ROOT, RecipeFixture, Session, jwt_header, run
 
 # The latest published release; the candidate is the locally built image.
-PREVIOUS = "registry.thesmos.dev/thesmos/casdoor@sha256:fc471613688a689838e329630c508aa8902e601a6fd16967918e9d565e59bb41"
+PREVIOUS = "registry.thesmos.dev/thesmos/casdoor@sha256:8f0b2b28fe0741635f52f42bc79139242a1560db29042c4d27414ec4c347106a"
 CANDIDATE = "casdoor-integration:candidate"
 THEME = {"themeType": "default", "colorPrimary": "#2f6f5e", "borderRadius": 9, "isCompact": False, "isEnabled": True}
 
