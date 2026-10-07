@@ -74,7 +74,9 @@ COPY --from=backend /source/integration-provenance.json /licenses/integration-pr
 COPY LICENSE NOTICE /licenses/
 COPY licenses/ /licenses/third-party/
 COPY docker/entrypoint.sh /entrypoint.sh
-ENV logConfig='{"adapter":"console","level":4}' initDataNewOnly=true secureStartup=true
+ENV logConfig='{"adapter":"console","level":4}' initDataNewOnly=true secureStartup=true dbMaxOpenConns=20
+# Uploads from the Local File System storage provider; mount a volume here.
+RUN install -d -o 1000 -g 1000 -m 0750 /files
 USER 1000:1000
 EXPOSE 8000
 ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]

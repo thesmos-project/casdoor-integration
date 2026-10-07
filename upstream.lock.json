@@ -6,8 +6,8 @@
   "patches": [
     {
       "path": "patches/casdoor-integration.patch",
-      "sha256": "b17554863595d8772c50d0f4cd082af30091c35856850a21bd40322625379cae",
-      "purpose": "SCIM behavior, typed JWT claims, persistent SAML NameIDs, OAuth redirect binding and retained signing-key support."
+      "sha256": "b790f586fa66e802a45eb1dc2a166a4fc3b8bcf3b9254aa843b1ab36958ab97d",
+      "purpose": "SCIM behavior, typed JWT claims, persistent SAML NameIDs, OAuth redirect binding, retained signing-key support and concurrent sign-in session bookkeeping."
     },
     {
       "path": "patches/casdoor-security-candidate.patch",
@@ -35,8 +35,8 @@
     },
     {
       "path": "patches/casdoor-secure-startup-candidate.patch",
-      "sha256": "713853eb3d7fbce0caa0c56ae89a7ddce777cbbef8d6d0f5f4a2ba8e2c7fdfb5",
-      "purpose": "Set the built-in administrator password from a bootstrap secret before serving, refuse unsafe startup settings, and disable RADIUS without a port."
+      "sha256": "6aef21712614f0c67e3ae964364892ede2507e00be69a1c66489175437c18fe8",
+      "purpose": "Set the built-in administrator password from a bootstrap secret before serving, refuse unsafe startup settings, disable RADIUS without a port, and bound the database connection pool."
     }
   ]
 }

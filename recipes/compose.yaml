@@ -23,10 +23,14 @@ services:
         read_only: true
         bind:
           create_host_path: false
-    tmpfs:
-      - /tmp:rw,noexec,nosuid,size=32m,mode=1777
+      # Uploaded files and file-backed sessions survive restarts.
+      - casdoor-files:/files
+      - casdoor-sessions:/tmp
     logging:
       driver: local
       options:
         max-size: "10m"
         max-file: "3"
+volumes:
+  casdoor-files:
+  casdoor-sessions:

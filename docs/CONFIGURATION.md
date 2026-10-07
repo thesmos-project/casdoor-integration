@@ -81,16 +81,21 @@ See [version limitations](RELEASE-STATUS.md) for its supported operations.
 ## Server configuration and persistence
 
 Mount a readable file at `/conf/app.conf`. The container refuses to start without
-it and runs as UID/GID `1000:1000`. The recipe mounts `/conf` read-only and provides
-a writable temporary directory at `/tmp`. Casdoor's supported environment
-configuration overrides remain available, such as `initDataNewOnly` and `logConfig`.
+it and runs as UID/GID `1000:1000`. The recipe mounts `/conf` read-only, keeps
+sessions in a volume at `/tmp` and uploaded files in a volume at `/files`.
+Casdoor's supported environment configuration overrides remain available, such as
+`initDataNewOnly`, `logConfig` and `dbMaxOpenConns`.
 
 Use a persistent database for users, clients, providers and theme configuration.
 A shared PostgreSQL server can host both applications with separate databases
 and roles; the Casdoor role should have no access to the Thesmos database.
-Media uploads and other writable storage require a configured volume or external
-storage provider. The supplied recipe does not configure that storage or a
-durable session store.
+To store uploads locally, add a storage provider of type `Local File System` with
+its domain set to the public origin; files are served from `/files`. An object
+storage provider works too. Casdoor keeps sessions as files, so run one instance
+per database, or configure `redisEndpoint` for shared sessions.
+
+`dbMaxOpenConns` limits the database pool (`20` in the image). Built-in policy
+adapters add at most two connections each.
 
 `initDataNewOnly=true` is the image default and preserves existing records during
 initialization.

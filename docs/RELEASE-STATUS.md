@@ -2,11 +2,11 @@
 
 | Item | Status |
 | --- | --- |
-| Version | `v4.15.0-thesmos.1-rc.2` |
+| Version | `v4.15.0-thesmos.1-rc.3` |
 | Source | Casdoor `v4.15.0` plus the [seven published patches](PATCHES.md) |
 | Platform | `linux/amd64` |
-| Local use | Buildable evaluation image and loopback Compose recipe |
-| Registry distribution | Signed evaluation image `registry.thesmos.dev/thesmos/casdoor@sha256:fc471613688a689838e329630c508aa8902e601a6fd16967918e9d565e59bb41` |
+| Deployment | Compose recipe with an optional Caddy HTTPS overlay |
+| Registry distribution | `rc.3` publication pending. Latest signed image, `rc.2`: `registry.thesmos.dev/thesmos/casdoor@sha256:fc471613688a689838e329630c508aa8902e601a6fd16967918e9d565e59bb41` |
 | Production release | None; this candidate is not approved for production |
 
 The [README](../README.md) describes the available capabilities. The
@@ -45,9 +45,10 @@ certificates on every restart; keep the image default `true`.
   Flows in both directions need an explicit authority and loop prevention.
 - JWT certificate retention does not add retained keys to application-specific
   JWKS or implement SAML certificate rollover.
-- The Compose recipe starts Casdoor only and has no production HTTPS endpoint,
-  media storage or durable session-store configuration. No Kubernetes recipe is provided.
-- Its memory/CPU limits are evaluation settings, not measured production capacity.
+- The Compose recipe runs one Casdoor instance; sessions are files in that
+  container. Multiple instances need `redisEndpoint`. No Kubernetes recipe is provided.
+- [Measured capacity](VALIDATION.md#measured-capacity) applies to the recipe's
+  limits on the test host; size `cpus` for the expected sign-in rate.
 - Thesmos Enterprise features need the corresponding edition and licence; this
   repository does not distribute an Enterprise implementation or image.
 
@@ -84,9 +85,9 @@ relinking. Test these changes against the existing deployment before upgrading.
 
 ## Production work still required
 
-Production approval remains open for exact-source advisory analysis and independent security review;
-a public HTTPS/proxy recipe and durable media/session storage; and deployment capacity.
-Upgrade, rollback, key rotation and backup restore are covered by the
+Production approval remains open for exact-source advisory analysis and independent
+security review. The HTTPS overlay, persistent storage and capacity are covered by
+the [HTTPS and capacity tests](VALIDATION.md). Upgrade, rollback, key rotation and backup restore are covered by the
 [upgrade acceptance test](VALIDATION.md); OIDC, SAML and SCIM with Thesmos were
 accepted over a TLS proxy in a separate evaluation stack.
 Dependency and asset licensing also require review for the accepted release.

@@ -304,6 +304,133 @@ index eb08f88..700ee34 100644
  	if application.UseEmailAsSamlNameId {
  		return user.Email, "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
  	}
+diff --git a/object/session.go b/object/session.go
+index f82ebf3..b2f4c25 100644
+--- a/object/session.go
++++ b/object/session.go
+@@ -1,4 +1,5 @@
+ // Copyright 2022 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-07.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -176,7 +177,16 @@ func mergeSessionInfos(dst []*SessionInfo, src []*SessionInfo) []*SessionInfo {
+ 	return dst
+ }
+ 
++// sessionRowsMutex serializes the read-modify-write of Session rows in this process.
++// Without it, concurrent sign-ins of one user race: both find no row and one insert
++// fails, or both rewrite the session id list and one id is lost, which then escapes
++// "sign out everywhere".
++var sessionRowsMutex sync.Mutex
++
+ func AddSession(session *Session) (bool, error) {
++	sessionRowsMutex.Lock()
++	defer sessionRowsMutex.Unlock()
++
+ 	dbSession, err := GetSingleSession(session.GetId())
+ 	if err != nil {
+ 		return false, err
+@@ -185,33 +195,42 @@ func AddSession(session *Session) (bool, error) {
+ 	if dbSession == nil {
+ 		session.CreatedTime = util.GetCurrentTime()
+ 
+-		affected, err := ormer.Engine.Insert(session)
+-		if err != nil {
+-			return false, err
++		affected, insertErr := ormer.Engine.Insert(session)
++		if insertErr == nil {
++			return affected != 0, nil
+ 		}
+-
+-		return affected != 0, nil
+-	} else {
+-		m := make(map[string]struct{})
+-		for _, v := range dbSession.SessionId {
+-			m[v] = struct{}{}
++		// Another instance may have inserted the row first; merge into it.
++		dbSession, err = GetSingleSession(session.GetId())
++		if err != nil || dbSession == nil {
++			return false, insertErr
+ 		}
+-		for _, v := range session.SessionId {
+-			if _, exists := m[v]; !exists {
+-				dbSession.SessionId = append(dbSession.SessionId, v)
+-			}
++	}
++
++	m := make(map[string]struct{})
++	for _, v := range dbSession.SessionId {
++		m[v] = struct{}{}
++	}
++	for _, v := range session.SessionId {
++		if _, exists := m[v]; !exists {
++			dbSession.SessionId = append(dbSession.SessionId, v)
+ 		}
++	}
+ 
+-		removeExtraSessionIds(dbSession)
++	removeExtraSessionIds(dbSession)
+ 
+-		dbSession.SessionInfos = mergeSessionInfos(dbSession.SessionInfos, session.SessionInfos)
+-		pruneSessionInfos(dbSession)
++	dbSession.SessionInfos = mergeSessionInfos(dbSession.SessionInfos, session.SessionInfos)
++	pruneSessionInfos(dbSession)
+ 
+-		return updateSessionIds(dbSession)
+-	}
++	return updateSessionIds(dbSession)
+ }
+ 
+ func DeleteSession(id, curSessionId string) (bool, error) {
++	sessionRowsMutex.Lock()
++	defer sessionRowsMutex.Unlock()
++	return deleteSession(id, curSessionId)
++}
++
++func deleteSession(id, curSessionId string) (bool, error) {
+ 	owner, name, application := util.GetOwnerAndNameAndOtherFromId(id)
+ 
+ 	// The session ids are Beego session ids no matter which application the row belongs to,
+@@ -275,6 +294,9 @@ func DeleteAllUserSessions(owner string, name string) (bool, error) {
+ }
+ 
+ func DeleteSessionId(id string, sessionId string) (bool, error) {
++	sessionRowsMutex.Lock()
++	defer sessionRowsMutex.Unlock()
++
+ 	session, err := GetSingleSession(id)
+ 	if err != nil {
+ 		return false, err
+@@ -297,7 +319,7 @@ func DeleteSessionId(id string, sessionId string) (bool, error) {
+ 
+ 	session.SessionId = util.DeleteVal(session.SessionId, sessionId)
+ 	if len(session.SessionId) == 0 {
+-		return DeleteSession(id, "")
++		return deleteSession(id, "")
+ 	} else {
+ 		pruneSessionInfos(session)
+ 		return updateSessionIds(session)
+@@ -324,6 +346,9 @@ func UpdateSessionLastActiveTime(owner string, name string, beegoSessionId strin
+ 	sessionActiveTimes[beegoSessionId] = now
+ 	sessionActiveTimesMutex.Unlock()
+ 
++	sessionRowsMutex.Lock()
++	defer sessionRowsMutex.Unlock()
++
+ 	sessions, err := GetUserSessions(owner, name)
+ 	if err != nil {
+ 		return err
+@@ -438,6 +463,9 @@ func EnforceApplicationSessionLimit(user *User, application string, currentSessi
+ 		return nil
+ 	}
+ 
++	sessionRowsMutex.Lock()
++	defer sessionRowsMutex.Unlock()
++
+ 	sessions, err := GetUserSessions(user.Owner, user.Name)
+ 	if err != nil {
+ 		return err
 diff --git a/object/syncer_scim.go b/object/syncer_scim.go
 index 978dafd..9ee1cb2 100644
 --- a/object/syncer_scim.go
@@ -344,10 +471,10 @@ index 978dafd..9ee1cb2 100644
  	}
 diff --git a/object/thesmos_integration_test.go b/object/thesmos_integration_test.go
 new file mode 100644
-index 0000000..29d251e
+index 0000000..d4c568f
 --- /dev/null
 +++ b/object/thesmos_integration_test.go
-@@ -0,0 +1,375 @@
+@@ -0,0 +1,414 @@
 +// Copyright 2026 The Thesmos integration contributors.
 +// Modified for the Thesmos integration evaluation, 2026-10-06.
 +//
@@ -371,9 +498,11 @@ index 0000000..29d251e
 +	"crypto/x509"
 +	"encoding/json"
 +	"encoding/pem"
++	"fmt"
 +	"net/http"
 +	"net/http/httptest"
 +	"reflect"
++	"sync"
 +	"testing"
 +	"time"
 +
@@ -721,6 +850,43 @@ index 0000000..29d251e
 +	global.DisplayName = "Global edit"
 +	if _, err := UpdateApplication("admin/client", &global, true, "en", nil); err == nil {
 +		t.Fatal("global administrator saved a policy naming a removed certificate")
++	}
++}
++
++func TestEvaluationConcurrentSigninsKeepEverySessionId(t *testing.T) {
++	engine, err := xorm.NewEngine("sqlite", t.TempDir()+"/sessions.sqlite")
++	if err != nil {
++		t.Fatal(err)
++	}
++	previous := ormer
++	ormer = &Ormer{Engine: engine}
++	t.Cleanup(func() { ormer = previous; engine.Close() })
++	if err := engine.Sync2(&Session{}, &Token{}); err != nil {
++		t.Fatal(err)
++	}
++	const signins = 16
++	errs := make(chan error, signins)
++	var wg sync.WaitGroup
++	for i := 0; i < signins; i++ {
++		wg.Add(1)
++		go func(i int) {
++			defer wg.Done()
++			id := fmt.Sprintf("session-%d", i)
++			_, err := AddSession(&Session{Owner: "tenant", Name: "reader", Application: "client", SessionId: []string{id},
++				SessionInfos: []*SessionInfo{{SessionId: id}}})
++			errs <- err
++		}(i)
++	}
++	wg.Wait()
++	close(errs)
++	for err := range errs {
++		if err != nil {
++			t.Fatalf("concurrent sign-in failed: %v", err)
++		}
++	}
++	stored, err := GetSingleSession("tenant/reader/client")
++	if err != nil || stored == nil || len(stored.SessionId) != signins {
++		t.Fatalf("a concurrent sign-in lost its session id: %v", stored)
 +	}
 +}
 diff --git a/object/token.go b/object/token.go

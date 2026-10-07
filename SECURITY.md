@@ -1,7 +1,7 @@
 # Security
 
-`v4.15.0-thesmos.1-rc.2` is an evaluation candidate, published as a signed image
-for evaluation. There are no supported production releases. See
+`v4.15.0-thesmos.1-rc.3` is an evaluation candidate; the signed `rc.2` image is
+published for evaluation. There are no supported production releases. See
 [version limitations](docs/RELEASE-STATUS.md), including initial administrator setup.
 
 Do not disclose credentials or suspected vulnerabilities through public issues.

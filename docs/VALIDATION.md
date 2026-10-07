@@ -1,7 +1,7 @@
 # Automated validation coverage
 
 This document describes checks provided by the builder and workflows for
-`v4.15.0-thesmos.1-rc.2`. It is not a certification of production security or
+`v4.15.0-thesmos.1-rc.3`. It is not a certification of production security or
 compatibility with every OIDC, SAML or SCIM client.
 
 | Check | Coverage |
@@ -14,12 +14,30 @@ compatibility with every OIDC, SAML or SCIM client.
 | Configurable runtime | Served frontend, saved organization theme, theme persistence across restart and rejection of a protected claim override. |
 | Runtime restrictions | Nonroot execution with a read-only filesystem and dropped capabilities. |
 | Upgrade and recovery | [upgrade-acceptance.py](../scripts/upgrade-acceptance.py) starts the latest published release on the same PostgreSQL/TLS recipe, creates an organization, client, user, theme and tokens, then upgrades to the candidate, rolls back, upgrades again, rotates the signing key with a retained previous key and restores a database backup into a new database. After each step it checks settings, signing keys, earlier tokens and refresh tokens. |
+| HTTPS recipe | [https-acceptance.py](../scripts/https-acceptance.py) runs `recipes/compose.https.yaml` with Caddy's local authority: HTTP redirect, verified certificate and HSTS, HTTPS OIDC issuer, `Secure` and `HttpOnly` session cookies, a forged `X-Forwarded-For` ignored, and uploaded files and sessions surviving a restart. |
+| Capacity | [capacity-acceptance.py](../scripts/capacity-acceptance.py) loads the recipe within its limits; see [measured capacity](#measured-capacity). |
 | Deployment recipe | [recipe-acceptance.py](../scripts/recipe-acceptance.py) runs the unchanged Compose recipe against disposable PostgreSQL with a restricted role and verified TLS: refusal without the bootstrap secret, rejection of `admin/123`, TOTP MFA enrollment and enforced second factor, wrong-code rejection, one-time recovery code, MFA and password kept across restart and secret rotation, and lockout after five wrong passwords. |
 | Publication | Registry upload probe, image signing, SPDX attestation verification and a smoke test of the pulled digest. An optional public mirror must also pass anonymous pull and signature/attestation verification. |
 
+## Measured capacity
+
+16 concurrent clients for 20 seconds per workload, recipe limits of 384 MiB and
+one CPU, `dbMaxOpenConns=20`, PostgreSQL 16 with TLS on the same host:
+
+| Workload | Requests/s | p95 latency | Errors |
+| --- | --- | --- | --- |
+| Password sign-in (bcrypt) | 15 | 1.7 s | 0 |
+| Client-credentials token | 50 | 0.53 s | 0 |
+| Introspection | 152 | 172 ms | 0 |
+| Discovery and JWKS | 308 | 66 ms | 0 |
+
+Peak memory was 73 MiB and peak database connections 22. Figures depend on the
+host CPU; CI reruns the test and fails on errors, an out-of-memory kill, a
+restart, memory above 80% of the limit or more than 24 connections.
+
 The runtime smoke test uses a disposable SQLite database on loopback; the recipe
-acceptance test adds PostgreSQL over TLS. Both bind only to loopback and use plain
-HTTP, so they do not test a public HTTPS proxy or a complete Thesmos stack. Publication checks run when publishing; passing a source build alone
+acceptance test adds PostgreSQL over TLS and the HTTPS test adds the proxy. A
+complete Thesmos stack is tested in a separate evaluation environment. Publication checks run when publishing; passing a source build alone
 does not establish that an image is available in a registry.
 
 The [Check candidate workflow](../.github/workflows/check.yml) produces build,

@@ -16,6 +16,7 @@ SCIM API. This version improves how Casdoor finds and updates those records:
 | Count all matching records and paginate the returned results. | The provisioner can traverse a directory without mistaking a page's length for the total. |
 | Preserve group `externalId` through creation and updates. | The provisioner can retain the source group's identity across synchronization. |
 | Map SCIM `active` to Casdoor's account state, including PATCH. | A deactivation sent by the provisioner disables the corresponding Casdoor account. |
+| Serialize updates to a user's session record. | Concurrent sign-ins of one user no longer fail with a duplicate-key error or drop a session id, which sign-out everywhere relies on. |
 | Limit a full replacement (`PUT`) to the attributes SCIM maps. | Administrator status, MFA, linked sign-in providers, groups and properties survive a replacement, and a disabled account stays disabled unless the request sets `active`. |
 
 **Casdoor → Thesmos:** a provisioner reads Casdoor's SCIM Users/Groups and writes
@@ -76,6 +77,11 @@ never resets a password that has already changed. It also refuses development
 mode, a default RADIUS secret and a missing initialization file, and disables the
 RADIUS server when no port is configured; an empty port previously opened a
 random public UDP port. The image enables these checks with `secureStartup=true`.
+
+The same patch adds `dbMaxOpenConns` to limit the database connection pool, and
+keeps the built-in policy adapters on two connections each. Without a limit,
+16 concurrent clients exhausted a PostgreSQL server's connections, which would
+also block other applications sharing it.
 See [secure startup](CONFIGURATION.md#initial-administrator-and-secure-startup).
 
 ## Update dependencies and distribution material

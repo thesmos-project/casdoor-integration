@@ -1,9 +1,9 @@
 # Local Casdoor Compose recipe
 
-This recipe starts the evaluation image on `http://localhost:19080` with an
-existing PostgreSQL database. Use a disposable database. It starts Casdoor only;
-run Thesmos separately. It provides neither a production HTTPS endpoint nor a
-complete production stack.
+This recipe runs one Casdoor instance against an existing PostgreSQL database.
+On its own it serves `http://localhost:19080` on loopback; with the HTTPS overlay
+it serves a public host name through a Caddy reverse proxy. It starts Casdoor
+only; run Thesmos separately.
 
 ## Prepare configuration
 
@@ -40,8 +40,28 @@ docker compose -f recipes/compose.yaml up -d
 Open `http://localhost:19080` and sign in as `admin` in the `built-in`
 organization with the password from `.local/deployment/admin-password`. See
 [secure startup](../docs/CONFIGURATION.md#initial-administrator-and-secure-startup).
-The recipe serves plain HTTP on loopback for evaluation; do not expose it as a
-production service.
+This port serves plain HTTP on loopback only; publish Casdoor through the HTTPS
+overlay below.
+
+## Serve HTTPS
+
+Point a DNS name at the host, allow ports 80 and 443, and set `origin` and
+`originFrontend` in `app.conf` to `https://` followed by that name. Then start
+both files:
+
+```sh
+export CASDOOR_DOMAIN=auth.example.com
+docker compose -f recipes/compose.yaml -f recipes/compose.https.yaml up -d
+```
+
+Caddy obtains and renews the certificate, redirects HTTP to HTTPS, sends HSTS
+and marks Casdoor's session cookie `Secure`; Casdoor sees plain HTTP behind the
+proxy and cannot set that attribute itself. Only Caddy publishes public ports.
+Casdoor trusts `X-Forwarded-For` only from loopback and private addresses, which
+here means the proxy; set `trustedProxies` if your network differs.
+`CASDOOR_HTTP_PORT` and `CASDOOR_HTTPS_PORT` change the published ports.
+[https-acceptance.py](../scripts/https-acceptance.py) tests this overlay with
+Caddy's local authority for `localhost`.
 
 `scripts/recipe-acceptance.py` runs this recipe end to end against a disposable
 PostgreSQL database with verified TLS, then removes everything it created.
@@ -52,7 +72,7 @@ Stop the component with:
 docker compose -f recipes/compose.yaml down
 ```
 
-The external database is not removed by this command. To run the published
+The external database and the storage volumes are kept. To run the published
 evaluation image instead of a local build, set `CASDOOR_IMAGE` to its digest:
 
 ```sh
@@ -64,14 +84,27 @@ match. The current default image is the locally built `casdoor-integration:candi
 
 ## Configuration and storage
 
-The recipe runs as UID/GID 1000, mounts configuration read-only, drops capabilities
-and supplies writable temporary storage. Theme, client and identity settings are
+The recipe runs as UID/GID 1000 with a read-only root filesystem, mounts
+configuration read-only and drops capabilities. The `casdoor-files` volume holds
+files uploaded through a Local File System storage provider at `/files`; the
+`casdoor-sessions` volume keeps signed-in sessions across restarts. Back up both
+volumes with the database. Theme, client and identity settings are
 managed through Casdoor's UI/API and persist in PostgreSQL. See
 [configuration examples](../docs/CONFIGURATION.md).
 
-`initDataNewOnly=true` avoids replacing existing records. The recipe has no media upload volume or
-durable session-store configuration. Its 384 MiB memory limit, one-CPU limit and
-Go memory settings are evaluation bounds, not measured production capacity.
+`initDataNewOnly=true` avoids replacing existing records.
+
+Sessions are files in one container, so run a single Casdoor instance per
+database. Within the recipe's 384 MiB and one-CPU limits, the
+[capacity test](../docs/VALIDATION.md#measured-capacity) ran without errors at
+about 15 password sign-ins, 50 token issues and 150 introspections per second,
+peaking at 73 MiB. Password sign-in is bounded by bcrypt; raise `cpus` for higher
+sign-in rates.
+
+`dbMaxOpenConns=20` (the image default) limits Casdoor's database pool; with its
+two built-in policy adapters it uses at most 24 connections. Keep the total for
+all applications on a shared PostgreSQL server below its `max_connections`,
+which defaults to 100.
 
 A shared PostgreSQL server can reduce infrastructure cost using separate databases
 and roles. Give the Casdoor role no access to the Thesmos database. Database sharing

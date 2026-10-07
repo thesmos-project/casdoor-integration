@@ -49,6 +49,57 @@ index e30eb86..7484038 100644
  	if err != nil {
  		panic(err)
  	}
+diff --git a/object/adapter.go b/object/adapter.go
+index 4a50f4c..71dad80 100644
+--- a/object/adapter.go
++++ b/object/adapter.go
+@@ -1,4 +1,5 @@
+ // Copyright 2022 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-07.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -210,6 +211,15 @@ func (adapter *Adapter) InitAdapter() error {
+ 		}
+ 	}
+ 
++	// Policy adapters on Casdoor's own database query rarely; keep their pools small
++	// so the total stays near dbMaxOpenConns.
++	if adapter.UseSameDb || adapter.isBuiltIn() {
++		if maxOpen, err := conf.GetConfigInt64("dbMaxOpenConns"); err == nil && maxOpen > 0 {
++			engine.SetMaxOpenConns(2)
++			engine.SetMaxIdleConns(1)
++		}
++	}
++
+ 	tableName := adapter.Table
+ 
+ 	xa, err := xormadapter.NewAdapterByEngineWithTableName(engine, tableName, "")
+diff --git a/object/ormer.go b/object/ormer.go
+index c63d867..3ee504b 100644
+--- a/object/ormer.go
++++ b/object/ormer.go
+@@ -1,4 +1,5 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
++// Modified for the Thesmos integration evaluation, 2026-10-07.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+@@ -116,6 +117,14 @@ func InitAdapter() {
+ 	tableNamePrefix := conf.GetConfigString("tableNamePrefix")
+ 	tbMapper := names.NewPrefixMapper(names.SnakeMapper{}, tableNamePrefix)
+ 	ormer.Engine.SetTableMapper(tbMapper)
++
++	// Without a limit, concurrent requests can exhaust the database's connections,
++	// including those of other applications sharing the server. Waiting for a
++	// pooled connection is preferable to failing the request.
++	if maxOpen, err := conf.GetConfigInt64("dbMaxOpenConns"); err == nil && maxOpen > 0 {
++		ormer.Engine.SetMaxOpenConns(int(maxOpen))
++		ormer.Engine.SetMaxIdleConns(int(maxOpen))
++	}
+ }
+ 
+ func CreateTables() {
 diff --git a/object/thesmos_secure_startup.go b/object/thesmos_secure_startup.go
 new file mode 100644
 index 0000000..4db2f17

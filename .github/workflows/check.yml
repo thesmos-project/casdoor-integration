@@ -50,6 +50,10 @@ jobs:
         run: python3 scripts/recipe-acceptance.py
       - name: Verify upgrade from the latest release, rollback, key rotation and restore
         run: python3 scripts/upgrade-acceptance.py
+      - name: Verify the HTTPS overlay, secure cookies and persistent storage
+        run: python3 scripts/https-acceptance.py
+      - name: Measure capacity within the recipe limits
+        run: python3 scripts/capacity-acceptance.py
       - name: Record candidate image identity
         run: docker image inspect casdoor-integration:candidate --format '{{json .}}' > .local/image-inspection.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -63,6 +67,8 @@ jobs:
             .local/image-smoke.json
             .local/recipe-acceptance.json
             .local/upgrade-acceptance.json
+            .local/https-acceptance.json
+            .local/capacity-acceptance.json
             .local/distribution.spdx.json
           include-hidden-files: true
           retention-days: 14

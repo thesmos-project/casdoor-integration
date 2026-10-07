@@ -6,7 +6,7 @@
     "dependency_and_asset_licensing": false,
     "bootstrap_mfa_and_recovery": true,
     "protocol_and_upgrade_acceptance": true,
-    "deployment_and_capacity_acceptance": false,
+    "deployment_and_capacity_acceptance": true,
     "independent_review": false
   },
   "candidate": {
@@ -18,7 +18,7 @@
     },
     "reviewed_by": "Codex: scoped local maintainer distribution review; independent production review pending",
     "acceptance_evidence": "docs/VALIDATION.md",
-    "accepted_build_inputs_sha256": "733f67c1fc238cb378bec34cfe8dd798007a089016cdae6b453a7e4dd0cd6830"
+    "accepted_build_inputs_sha256": "4077d4fcd3776b1ab9c329c36a640082d3220c212269e62ac6c1d62f8af81def"
   },
   "note": "Candidate accepted for evaluation distribution with fresh CI checks and release-environment owner review. Production and stable publication remain unapproved."
 }

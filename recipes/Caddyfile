@@ -1,0 +1,16 @@
+# Public HTTPS entry point for Casdoor. Caddy obtains and renews a certificate
+# for CASDOOR_DOMAIN automatically; "localhost" uses its local authority.
+{$CASDOOR_DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	reverse_proxy casdoor:8000 {
+		# Casdoor receives plain HTTP behind this proxy and cannot mark its
+		# session cookie Secure itself.
+		header_down Set-Cookie "^(casdoor_session_id=.*)$" "$1; Secure"
+	}
+}

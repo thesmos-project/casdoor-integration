@@ -78,8 +78,9 @@ class Session:
 
 
 class RecipeFixture:
-    def __init__(self, image):
+    def __init__(self, image, overlays=(), environment=None):
         self.image = image
+        self.overlays = [str(ROOT / "recipes" / name) for name in overlays]
         nonce = secrets.token_hex(4)
         self.work = ROOT / ".local" / ("acceptance-" + nonce)
         self.deployment, self.certs = self.work / "deployment", self.work / "certs"
@@ -91,7 +92,7 @@ class RecipeFixture:
             probe.bind(("127.0.0.1", 0))
             self.port = probe.getsockname()[1]
         self.base = f"http://localhost:{self.port}"
-        self.env = {"PATH": "/usr/local/bin:/usr/bin:/bin", "CASDOOR_PORT": str(self.port), "HOME": str(self.work)}
+        self.env = {"PATH": "/usr/local/bin:/usr/bin:/bin", "CASDOOR_PORT": str(self.port), "HOME": str(self.work), **(environment or {})}
         self.db_password = secrets.token_urlsafe(24)
 
     def start_database(self):
@@ -126,11 +127,11 @@ class RecipeFixture:
         return run("docker", "exec", self.database, "psql", "-U", "postgres", "-d", database, "-v", "ON_ERROR_STOP=1",
                    "-Atc", sql, check=check)
 
-    def write_config(self, database="casdoor"):
+    def write_config(self, database="casdoor", origin=None):
         config = (ROOT / "recipes/app.conf.example").read_text()
         config = config.replace("REPLACE_WITH_PRIVATE_PASSWORD", self.db_password).replace("YOUR_DATABASE_HOST", "recipe-db")
         config = config.replace("dbname=casdoor", "dbname=" + database).replace("dbName = casdoor", "dbName = " + database)
-        config = re.sub(r'^(origin|originFrontend) = .*$', lambda m: f'{m.group(1)} = "{self.base}"', config, flags=re.M)
+        config = re.sub(r'^(origin|originFrontend) = .*$', lambda m: f'{m.group(1)} = "{origin or self.base}"', config, flags=re.M)
         (self.deployment / "app.conf").write_text(config)
         shutil.copyfile(self.certs / "ca.pem", self.deployment / "db-ca.pem")
         for path in [self.deployment / "app.conf", self.deployment / "db-ca.pem"]:
@@ -150,14 +151,14 @@ class RecipeFixture:
             "services": {"casdoor": {"image": image or self.image, "volumes": [
                 {"type": "bind", "source": str(self.deployment), "target": "/conf", "read_only": True}]}},
             "networks": {"default": {"name": self.network, "external": True}}}))
-        command = ["docker", "compose", "-p", self.project, "-f", str(ROOT / "recipes/compose.yaml"),
-                   "-f", str(self.work / "override.yaml"), *args]
+        files = [str(ROOT / "recipes/compose.yaml"), *self.overlays, str(self.work / "override.yaml")]
+        command = ["docker", "compose", "-p", self.project, *[part for path in files for part in ("-f", path)], *args]
         return subprocess.run(command, capture_output=True, text=True, env=self.env)
 
     def start(self, image=None):
         result = self.compose("up", "-d", "--force-recreate", image=image)
         if result.returncode != 0:
-            raise RuntimeError("docker compose up failed")
+            raise RuntimeError("docker compose up failed: " + result.stderr.strip()[-500:])
 
     def logs(self):
         return self.compose("logs", "casdoor").stdout
@@ -180,7 +181,7 @@ class RecipeFixture:
 
     def close(self):
         if (self.work / "override.yaml").exists():
-            self.compose("down", "--remove-orphans")
+            self.compose("down", "--remove-orphans", "--volumes")
         run("docker", "rm", "-f", self.database, check=False)
         run("docker", "network", "rm", self.network, check=False)
         shutil.rmtree(self.work, ignore_errors=True)
