@@ -11,7 +11,7 @@
   },
   "reviewed_by": "Project owner (thesmos-project) accepted v4.15.0-thesmos.1 for production on 2026-10-07 and v4.15.0-thesmos.2 on 2026-10-08, on the maintainers' security review, licence coverage report and automated acceptance results",
   "acceptance_evidence": "docs/RELEASE-STATUS.md#release-acceptance",
-  "accepted_build_inputs_sha256": "cbad936f3bf0cfa14b9db06374d02daee9d0f639f3310ffc3e3b499013634bbf",
+  "accepted_build_inputs_sha256": "4296259e11c1d56b290910c2d0fb52140ba7146188ee38b1cfa1d2d048a447d5",
   "candidate": {
     "publication_approved": true,
     "required_acceptance": {
@@ -21,7 +21,7 @@
     },
     "reviewed_by": "Codex: scoped local maintainer distribution review; independent production review pending",
     "acceptance_evidence": "docs/VALIDATION.md",
-    "accepted_build_inputs_sha256": "cbad936f3bf0cfa14b9db06374d02daee9d0f639f3310ffc3e3b499013634bbf"
+    "accepted_build_inputs_sha256": "4296259e11c1d56b290910c2d0fb52140ba7146188ee38b1cfa1d2d048a447d5"
   },
   "note": "v4.15.0-thesmos.2 accepted for production and stable publication. Release candidates use the candidate policy."
 }
