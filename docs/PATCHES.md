@@ -84,11 +84,26 @@ keeps the built-in policy adapters on two connections each. Without a limit,
 also block other applications sharing it.
 See [secure startup](CONFIGURATION.md#initial-administrator-and-secure-startup).
 
+## Close redirect and SSH tunnel gaps
+
+Upstream Casdoor accepts every subdomain of a redirect URI registered as a full
+URL, so `https://app.example.com/callback` also accepts
+`https://evil.app.example.com/callback`. Whoever controls such a subdomain could
+receive authorization codes. A full URL now matches only its own host. Host
+patterns without a scheme, such as `.example.com`, still allow subdomains.
+
+Database syncers that connect through an SSH tunnel accepted any server key. A
+syncer now has an **SSH host key** setting; Casdoor verifies the server against
+it and refuses to connect without it. See
+[database syncers through an SSH tunnel](CONFIGURATION.md#database-syncers-through-an-ssh-tunnel).
+The [security review](SECURITY-REVIEW.md) lists the advisories checked for this version.
+
 ## Update dependencies and distribution material
 
-Backend changes update Go dependencies and use the maintained `go-acme/lego`
-ACME implementation. Frontend changes update runtime/build dependencies and use
-the official SheetJS distribution. Related regression tests are included.
+Backend changes update Go dependencies, including the Coraza web application
+firewall library, and use the maintained `go-acme/lego` ACME implementation.
+Frontend changes update runtime/build dependencies and use the official SheetJS
+distribution. Related regression tests are included.
 
 The LDAP message library uses its author's MIT revision
 [`8d785c64d1c87d6fa9c95591edf9d8abc603a34c`](https://github.com/lor00x/goldap/commit/8d785c64d1c87d6fa9c95591edf9d8abc603a34c).
@@ -103,8 +118,8 @@ SHA-256 checksums. Original Casdoor headers and authorship are preserved.
 | File | Changes |
 | --- | --- |
 | [Integration](../patches/casdoor-integration.patch) | SCIM, JSON claims, persistent SAML identity, redirect/client binding and retained JWT certificates. |
-| [Backend dependencies](../patches/casdoor-security-candidate.patch) | Go/ACME updates and regressions. |
-| [Frontend dependencies](../patches/casdoor-frontend-candidate.patch) | Browser runtime dependencies and SheetJS distribution. |
+| [Backend security](../patches/casdoor-security-candidate.patch) | Go, ACME and Coraza updates, exact redirect hosts, SSH host key verification and SAML regression tests. |
+| [Frontend](../patches/casdoor-frontend-candidate.patch) | Browser runtime dependencies, SheetJS distribution and the syncer SSH host key field. |
 | [Build dependencies](../patches/casdoor-build-chain-candidate.patch) | Frontend build/test dependencies. |
 | [Claim configuration](../patches/casdoor-claim-configuration-candidate.patch) | Save-time validation and selected-field application updates. |
 | [LDAP licence](../patches/casdoor-ldap-license-candidate.patch) | Author-provided MIT dependency revision. |

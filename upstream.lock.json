@@ -11,12 +11,12 @@
     },
     {
       "path": "patches/casdoor-security-candidate.patch",
-      "sha256": "d61aeb67dfb5dda52548ccb8c0b693e2027fb3f93eb1e69b07df56395969b033",
+      "sha256": "93b252e3172215bed66fc435db44e45f4aec24b7ac977db87318fadfec053600",
       "purpose": "Go dependency updates, maintained ACME implementation and SAML regression coverage."
     },
     {
       "path": "patches/casdoor-frontend-candidate.patch",
-      "sha256": "32763b324c47fbfbe862ecf2aa7ce4dc3765c5748f46583f956da0b86851b837",
+      "sha256": "2ad1f36bbd32b48d6c07752b15031193251a5d6aa79b95c9e6c3d7ffbdae6346",
       "purpose": "Frontend runtime dependency updates, including SheetJS from its official distribution."
     },
     {
@@ -31,7 +31,7 @@
     },
     {
       "path": "patches/casdoor-ldap-license-candidate.patch",
-      "sha256": "bf102ec21b24237b83f46b0ee8a872ce11be4aa7a228f87b56fa00e4cf04182d"
+      "sha256": "b5f153841ed37374899a7a6e920aabaa6ec94f249c461f820fe3a5808176b0e8"
     },
     {
       "path": "patches/casdoor-secure-startup-candidate.patch",

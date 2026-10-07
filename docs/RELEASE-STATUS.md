@@ -54,6 +54,14 @@ certificates on every restart; keep the image default `true`.
 
 ## Upgrade considerations
 
+A redirect URI registered as a full URL now matches only that exact host. A
+client that signs in from a subdomain of a registered URL fails with an invalid
+redirect URI; register each callback URL, or use a host pattern without a scheme
+such as `.example.com` when subdomains are intended.
+
+Database syncers that use an SSH tunnel stop connecting until their **SSH host
+key** is set. See [database syncers through an SSH tunnel](CONFIGURATION.md#database-syncers-through-an-ssh-tunnel).
+
 Authorization-code clients must send the exact redirect URI. Codes issued before
 the binding change may require fresh login. Custom refresh tokens omit application
 custom claims; check any client that relied on those values.

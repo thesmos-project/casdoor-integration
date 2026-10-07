@@ -36,6 +36,203 @@ index 58a4542..807049a 100644
 +    "**/node-fetch": "2.7.0"
    }
  }
+diff --git a/web/src/locales/de/data.json b/web/src/locales/de/data.json
+index 655293c..d657047 100644
+--- a/web/src/locales/de/data.json
++++ b/web/src/locales/de/data.json
+@@ -1538,9 +1538,11 @@
+     "Is read-only": "Nur lesbar",
+     "Is read-only - Tooltip": "Nur lesbar",
+     "New Syncer": "Neuer Syncer",
++    "Paste the public host key of the SSH server, for example the output of ssh-keyscan": "Fügen Sie den öffentlichen Hostschlüssel des SSH-Servers ein, zum Beispiel die Ausgabe von ssh-keyscan",
+     "Paste your Google Workspace service account JSON key here": "Fügen Sie hier Ihren Google Workspace Service-Account-JSON-Schlüssel ein",
+     "SCIM Server URL": "SCIM-Server-URL",
+     "SSH host": "SSH-Host",
++    "SSH host key": "SSH-Hostschlüssel",
+     "SSH password": "SSH-Passwort",
+     "SSH port": "SSH-Port",
+     "SSH user": "SSH-Benutzer",
+diff --git a/web/src/locales/en/data.json b/web/src/locales/en/data.json
+index 752f383..8c18b82 100644
+--- a/web/src/locales/en/data.json
++++ b/web/src/locales/en/data.json
+@@ -1551,9 +1551,11 @@
+     "Is read-only": "Is read-only",
+     "Is read-only - Tooltip": "When enabled, data from this syncer source will only be read and not written back",
+     "New Syncer": "New Syncer",
++    "Paste the public host key of the SSH server, for example the output of ssh-keyscan": "Paste the public host key of the SSH server, for example the output of ssh-keyscan",
+     "Paste your Google Workspace service account JSON key here": "Paste your Google Workspace service account JSON key here",
+     "SCIM Server URL": "SCIM Server URL",
+     "SSH host": "SSH host",
++    "SSH host key": "SSH host key",
+     "SSH password": "SSH password",
+     "SSH port": "SSH port",
+     "SSH user": "SSH user",
+diff --git a/web/src/locales/es/data.json b/web/src/locales/es/data.json
+index ed28596..722e4b2 100644
+--- a/web/src/locales/es/data.json
++++ b/web/src/locales/es/data.json
+@@ -1538,9 +1538,11 @@
+     "Is read-only": "Es solo lectura",
+     "Is read-only - Tooltip": "Es solo lectura - Información adicional",
+     "New Syncer": "Nuevo Syncer",
++    "Paste the public host key of the SSH server, for example the output of ssh-keyscan": "Pegue la clave pública de host del servidor SSH, por ejemplo la salida de ssh-keyscan",
+     "Paste your Google Workspace service account JSON key here": "Pega aquí la clave JSON de la cuenta de servicio de Google Workspace",
+     "SCIM Server URL": "URL del servidor SCIM",
+     "SSH host": "Host SSH",
++    "SSH host key": "Clave de host SSH",
+     "SSH password": "Contraseña SSH",
+     "SSH port": "Puerto SSH",
+     "SSH user": "Usuario SSH",
+diff --git a/web/src/locales/fr/data.json b/web/src/locales/fr/data.json
+index 9f659ec..6d69af5 100644
+--- a/web/src/locales/fr/data.json
++++ b/web/src/locales/fr/data.json
+@@ -1538,9 +1538,11 @@
+     "Is read-only": "Est en lecture seule",
+     "Is read-only - Tooltip": "Est en lecture seule - Infobulle",
+     "New Syncer": "Nouveau synchroniseur",
++    "Paste the public host key of the SSH server, for example the output of ssh-keyscan": "Collez la clé publique d'hôte du serveur SSH, par exemple la sortie de ssh-keyscan",
+     "Paste your Google Workspace service account JSON key here": "Collez ici la clé JSON du compte de service Google Workspace",
+     "SCIM Server URL": "URL du serveur SCIM",
+     "SSH host": "Hôte SSH",
++    "SSH host key": "Clé d'hôte SSH",
+     "SSH password": "Mot de passe SSH",
+     "SSH port": "Port SSH",
+     "SSH user": "Utilisateur SSH",
+diff --git a/web/src/locales/ja/data.json b/web/src/locales/ja/data.json
+index 3772dd9..4f39943 100644
+--- a/web/src/locales/ja/data.json
++++ b/web/src/locales/ja/data.json
+@@ -1538,9 +1538,11 @@
+     "Is read-only": "読み取り専用か",
+     "Is read-only - Tooltip": "読み取り専用か - ツールチップ",
+     "New Syncer": "新しいシンクロナイザー",
++    "Paste the public host key of the SSH server, for example the output of ssh-keyscan": "SSHサーバーの公開ホストキーを貼り付けてください（例：ssh-keyscanの出力）",
+     "Paste your Google Workspace service account JSON key here": "ここにGoogle WorkspaceサービスアカウントのJSONキーを貼り付けてください",
+     "SCIM Server URL": "SCIMサーバーURL",
+     "SSH host": "SSHホスト",
++    "SSH host key": "SSHホストキー",
+     "SSH password": "SSHパスワード",
+     "SSH port": "SSHポート",
+     "SSH user": "SSHユーザー",
+diff --git a/web/src/locales/pl/data.json b/web/src/locales/pl/data.json
+index 966c5bf..2d04210 100644
+--- a/web/src/locales/pl/data.json
++++ b/web/src/locales/pl/data.json
+@@ -1538,9 +1538,11 @@
+     "Is read-only": "Tylko do odczytu",
+     "Is read-only - Tooltip": "Tylko do odczytu - etykietka",
+     "New Syncer": "Nowy synchronizator",
++    "Paste the public host key of the SSH server, for example the output of ssh-keyscan": "Wklej publiczny klucz hosta serwera SSH, na przykład wynik polecenia ssh-keyscan",
+     "Paste your Google Workspace service account JSON key here": "Wklej tutaj klucz JSON konta usługi Google Workspace",
+     "SCIM Server URL": "URL serwera SCIM",
+     "SSH host": "Host SSH",
++    "SSH host key": "Klucz hosta SSH",
+     "SSH password": "Hasło SSH",
+     "SSH port": "Port SSH",
+     "SSH user": "Użytkownik SSH",
+diff --git a/web/src/locales/pt/data.json b/web/src/locales/pt/data.json
+index 79060db..409fd51 100644
+--- a/web/src/locales/pt/data.json
++++ b/web/src/locales/pt/data.json
+@@ -1538,9 +1538,11 @@
+     "Is read-only": "É somente leitura",
+     "Is read-only - Tooltip": "Dica: é somente leitura",
+     "New Syncer": "Novo Syncer",
++    "Paste the public host key of the SSH server, for example the output of ssh-keyscan": "Cole a chave pública de host do servidor SSH, por exemplo a saída de ssh-keyscan",
+     "Paste your Google Workspace service account JSON key here": "Cole aqui a chave JSON da conta de serviço do Google Workspace",
+     "SCIM Server URL": "URL do servidor SCIM",
+     "SSH host": "Host SSH",
++    "SSH host key": "Chave de host SSH",
+     "SSH password": "Senha SSH",
+     "SSH port": "Porta SSH",
+     "SSH user": "Usuário SSH",
+diff --git a/web/src/locales/tr/data.json b/web/src/locales/tr/data.json
+index 5095172..00aeab0 100644
+--- a/web/src/locales/tr/data.json
++++ b/web/src/locales/tr/data.json
+@@ -1538,9 +1538,11 @@
+     "Is read-only": "Salt okunur mu",
+     "Is read-only - Tooltip": "Salt okunur mu - Araç ipucu",
+     "New Syncer": "Yeni Senkronizatör",
++    "Paste the public host key of the SSH server, for example the output of ssh-keyscan": "SSH sunucusunun genel ana bilgisayar anahtarını yapıştırın, örneğin ssh-keyscan çıktısı",
+     "Paste your Google Workspace service account JSON key here": "Google Workspace hizmet hesabı JSON anahtarınızı buraya yapıştırın",
+     "SCIM Server URL": "SCIM sunucu URL'si",
+     "SSH host": "SSH sunucusu",
++    "SSH host key": "SSH ana bilgisayar anahtarı",
+     "SSH password": "SSH şifresi",
+     "SSH port": "SSH portu",
+     "SSH user": "SSH kullanıcısı",
+diff --git a/web/src/locales/uk/data.json b/web/src/locales/uk/data.json
+index 435a730..b7b14c6 100644
+--- a/web/src/locales/uk/data.json
++++ b/web/src/locales/uk/data.json
+@@ -1538,9 +1538,11 @@
+     "Is read-only": "Є лише для читання",
+     "Is read-only - Tooltip": "Лише для читання – підказка",
+     "New Syncer": "Новий синхронізатор",
++    "Paste the public host key of the SSH server, for example the output of ssh-keyscan": "Вставте публічний ключ хоста SSH-сервера, наприклад вивід ssh-keyscan",
+     "Paste your Google Workspace service account JSON key here": "Вставте сюди JSON-ключ службового облікового запису Google Workspace",
+     "SCIM Server URL": "URL сервера SCIM",
+     "SSH host": "Хост SSH",
++    "SSH host key": "Ключ хоста SSH",
+     "SSH password": "Пароль SSH",
+     "SSH port": "Порт SSH",
+     "SSH user": "Користувач SSH",
+diff --git a/web/src/locales/vi/data.json b/web/src/locales/vi/data.json
+index 96f1d80..781bfd0 100644
+--- a/web/src/locales/vi/data.json
++++ b/web/src/locales/vi/data.json
+@@ -1538,9 +1538,11 @@
+     "Is read-only": "Chỉ đọc",
+     "Is read-only - Tooltip": "Chỉ có thể đọc, không thể chỉnh sửa",
+     "New Syncer": "Đồng bộ mới",
++    "Paste the public host key of the SSH server, for example the output of ssh-keyscan": "Dán khóa công khai của máy chủ SSH, ví dụ đầu ra của ssh-keyscan",
+     "Paste your Google Workspace service account JSON key here": "Dán khóa JSON tài khoản dịch vụ Google Workspace của bạn tại đây",
+     "SCIM Server URL": "URL máy chủ SCIM",
+     "SSH host": "Máy chủ SSH",
++    "SSH host key": "Khóa máy chủ SSH",
+     "SSH password": "Mật khẩu SSH",
+     "SSH port": "Cổng SSH",
+     "SSH user": "Người dùng SSH",
+diff --git a/web/src/locales/zh/data.json b/web/src/locales/zh/data.json
+index 8f1bede..4300533 100644
+--- a/web/src/locales/zh/data.json
++++ b/web/src/locales/zh/data.json
+@@ -1546,9 +1546,11 @@
+     "Is read-only": "是否只读",
+     "Is read-only - Tooltip": "启用后，此同步器来源的数据只读取不写回",
+     "New Syncer": "添加同步器",
++    "Paste the public host key of the SSH server, for example the output of ssh-keyscan": "粘贴SSH服务器的公共主机密钥，例如ssh-keyscan的输出",
+     "Paste your Google Workspace service account JSON key here": "请在此粘贴您的Google Workspace服务账户JSON密钥",
+     "SCIM Server URL": "SCIM服务器URL",
+     "SSH host": "SSH主机",
++    "SSH host key": "SSH主机密钥",
+     "SSH password": "SSH密码",
+     "SSH port": "SSH端口",
+     "SSH user": "SSH用户",
+diff --git a/web/src/pages/SyncerEditPage.tsx b/web/src/pages/SyncerEditPage.tsx
+index 17258e4..ab6ddea 100644
+--- a/web/src/pages/SyncerEditPage.tsx
++++ b/web/src/pages/SyncerEditPage.tsx
+@@ -205,6 +205,16 @@ export default function SyncerEditPage() {
+       labelKey: "syncer:SSH password",
+       when: (ctx) => needSshFields(ctx.record) && ctx.record.sshType === "password",
+     },
++    {
++      // Casdoor refuses the tunnel until it can verify the SSH server
++      type: "textarea",
++      name: "sshHostKey",
++      labelKey: "syncer:SSH host key",
++      rows: 3,
++      required: true,
++      placeholder: i18next.t("syncer:Paste the public host key of the SSH server, for example the output of ssh-keyscan"),
++      when: (ctx) => needSshFields(ctx.record) && !!ctx.record.sshType,
++    },
+     {
+       type: "custom",
+       name: "cert",
 diff --git a/web/yarn.lock b/web/yarn.lock
 index 89f9331..c7d9eb0 100644
 --- a/web/yarn.lock

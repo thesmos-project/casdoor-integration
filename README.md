@@ -90,6 +90,7 @@ databases and restricted roles.
 - [Understand the patches](docs/PATCHES.md)
 - [Check version status and limitations](docs/RELEASE-STATUS.md)
 - [See validation coverage](docs/VALIDATION.md)
+- [Read the security review](docs/SECURITY-REVIEW.md)
 - [Read image source and licence information](docs/DISTRIBUTION.md)
 - [Maintain or release the integration](MAINTENANCE.md)
 - [Publish and verify an image](docs/REGISTRY.md)

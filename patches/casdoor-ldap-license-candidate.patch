@@ -1,5 +1,5 @@
 diff --git a/go.mod b/go.mod
-index b387fde..43210f3 100644
+index 7c80e28..8f8ee99 100644
 --- a/go.mod
 +++ b/go.mod
 @@ -53,7 +53,7 @@ require (
@@ -12,12 +12,12 @@ index b387fde..43210f3 100644
  	github.com/microsoft/go-mssqldb v1.9.0
  	github.com/mitchellh/mapstructure v1.5.0
 diff --git a/go.sum b/go.sum
-index 25b603c..d6fc254 100644
+index 8494272..a6c1b5e 100644
 --- a/go.sum
 +++ b/go.sum
-@@ -1450,6 +1450,8 @@ github.com/localtunnel/go-localtunnel v0.0.0-20170326223115-8a804488f275 h1:IZyc
+@@ -1459,6 +1459,8 @@ github.com/line/line-bot-sdk-go v7.8.0+incompatible/go.mod h1:0RjLjJEAU/3GIcHkC3
+ github.com/localtunnel/go-localtunnel v0.0.0-20170326223115-8a804488f275 h1:IZycmTpoUtQK3PD60UYBwjaCUHUP7cML494ao9/O8+Q=
  github.com/localtunnel/go-localtunnel v0.0.0-20170326223115-8a804488f275/go.mod h1:zt6UU74K6Z6oMOYJbJzYpYucqdcQwSMPBEdSvGiaUMw=
- github.com/lor00x/goldap v0.0.0-20180618054307-a546dffdd1a3 h1:wIONC+HMNRqmWBjuMxhatuSzHaljStc4gjDeKycxy0A=
  github.com/lor00x/goldap v0.0.0-20180618054307-a546dffdd1a3/go.mod h1:37YR9jabpiIxsb8X9VCIx8qFOjTDIIrIHHODa8C4gz0=
 +github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8 h1:z9RDOBcFcf3f2hSfKuoM3/FmJpt8M+w0fOy4wKneBmc=
 +github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8/go.mod h1:37YR9jabpiIxsb8X9VCIx8qFOjTDIIrIHHODa8C4gz0=

@@ -78,6 +78,21 @@ server and mappings to fetch its Users into Casdoor. The request-lifetime patch
 allows the HTTP requests to complete under the client's 30-second timeout.
 See [version limitations](RELEASE-STATUS.md) for its supported operations.
 
+### Database syncers through an SSH tunnel
+
+A database syncer can reach its database through SSH. Casdoor verifies the SSH
+server against the syncer's **SSH host key** and refuses to connect without it.
+Paste one or more public key lines, for example the output of:
+
+```sh
+ssh-keyscan -p 22 db-gateway.example.com
+```
+
+Check the scanned key against the server itself, such as
+`/etc/ssh/ssh_host_ed25519_key.pub`, before you save it. Casdoor accepts
+`authorized_keys` lines and `known_hosts` lines; it ignores the host name in a
+`known_hosts` line and always connects to the syncer's SSH host.
+
 ## Server configuration and persistence
 
 Mount a readable file at `/conf/app.conf`. The container refuses to start without
