@@ -2,7 +2,7 @@
 
 These manifests run one Casdoor instance on Kubernetes behind an HTTPS Ingress,
 against an existing PostgreSQL database. They use the same image and security
-settings as the [Compose recipe](../README.md): a non-root user, a read-only
+settings as the [Compose recipe](../compose/README.md): a non-root user, a read-only
 filesystem, no capabilities, memory and CPU limits, and secure startup.
 
 | Directory | Use |

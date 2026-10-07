@@ -80,7 +80,7 @@ class Session:
 class RecipeFixture:
     def __init__(self, image, overlays=(), environment=None):
         self.image = image
-        self.overlays = [str(ROOT / "recipes" / name) for name in overlays]
+        self.overlays = [str(ROOT / "recipes/compose" / name) for name in overlays]
         nonce = secrets.token_hex(4)
         self.work = ROOT / ".local" / ("acceptance-" + nonce)
         self.deployment, self.certs = self.work / "deployment", self.work / "certs"
@@ -151,7 +151,7 @@ class RecipeFixture:
             "services": {"casdoor": {"image": image or self.image, "volumes": [
                 {"type": "bind", "source": str(self.deployment), "target": "/conf", "read_only": True}]}},
             "networks": {"default": {"name": self.network, "external": True}}}))
-        files = [str(ROOT / "recipes/compose.yaml"), *self.overlays, str(self.work / "override.yaml")]
+        files = [str(ROOT / "recipes/compose/compose.yaml"), *self.overlays, str(self.work / "override.yaml")]
         command = ["docker", "compose", "-p", self.project, *[part for path in files for part in ("-f", path)], *args]
         return subprocess.run(command, capture_output=True, text=True, env=self.env)
 

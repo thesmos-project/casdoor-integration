@@ -18,7 +18,7 @@ services:
       - "127.0.0.1:${CASDOOR_PORT:-19080}:8000"
     volumes:
       - type: bind
-        source: ../.local/deployment
+        source: ../../.local/deployment
         target: /conf
         read_only: true
         bind:

@@ -68,7 +68,7 @@ Pin the digest shown in the [registry guide](docs/REGISTRY.md) for repeatable de
 [Verify its signature and SBOM](docs/REGISTRY.md#verify-a-published-image) before use.
 
 Read the [release notes and upgrade considerations](docs/RELEASE-STATUS.md)
-before deploying, and use the [HTTPS recipe](recipes/README.md) for production. On a new database the image requires an initial administrator password file;
+before deploying, and use the [HTTPS setup](recipes/compose/README.md#serve-https) or the [Kubernetes recipe](recipes/kubernetes/README.md) for production. On a new database the image requires an initial administrator password file;
 see [secure startup](docs/CONFIGURATION.md#initial-administrator-and-secure-startup).
 
 To build the image yourself, you need Git, Python 3, an authenticated GitHub CLI and Docker with Buildx:
@@ -79,12 +79,13 @@ python3 scripts/build-image.py
 ```
 
 The output is `casdoor-integration:candidate`. Follow the
-[Compose setup instructions](recipes/README.md) or the [Kubernetes recipe](recipes/kubernetes/README.md) to configure PostgreSQL and start
+[Compose setup instructions](recipes/compose/README.md) or the [Kubernetes recipe](recipes/kubernetes/README.md) to configure PostgreSQL and start
 Casdoor. A single PostgreSQL server can host both applications using separate
 databases and restricted roles.
 
 ## Documentation
 
+- [Deploy with Compose or Kubernetes](recipes/README.md)
 - [Configure themes, JWT claims, SAML and SCIM](docs/CONFIGURATION.md)
 - [Understand the patches](docs/PATCHES.md)
 - [Read the release notes and limits](docs/RELEASE-STATUS.md)

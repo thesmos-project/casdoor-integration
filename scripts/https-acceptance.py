@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""HTTPS recipe acceptance: recipes/compose.https.yaml in front of the recipe.
+"""HTTPS recipe acceptance: recipes/compose/compose.https.yaml in front of the recipe.
 
 Runs Caddy with its local authority for "localhost", PostgreSQL with verified
 TLS, and checks HTTPS redirection, HSTS, the Secure session cookie, the OIDC

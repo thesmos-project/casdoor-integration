@@ -1,5 +1,5 @@
-# HTTPS overlay for recipes/compose.yaml:
-#   CASDOOR_DOMAIN=auth.example.com docker compose -f recipes/compose.yaml -f recipes/compose.https.yaml up -d
+# HTTPS overlay for recipes/compose/compose.yaml:
+#   CASDOOR_DOMAIN=auth.example.com docker compose -f recipes/compose/compose.yaml -f recipes/compose/compose.https.yaml up -d
 # Set origin and originFrontend in app.conf to https://$CASDOOR_DOMAIN.
 services:
   proxy:

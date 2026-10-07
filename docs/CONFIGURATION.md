@@ -2,7 +2,7 @@
 
 The container runs Casdoor with its administrator UI/API. Organization and
 application settings are stored in the configured database; server configuration
-is supplied at deployment. See the [local Compose recipe](../recipes/README.md)
+is supplied at deployment. See the [Compose recipe](../recipes/compose/README.md)
 for the required PostgreSQL configuration and [release limitations](RELEASE-STATUS.md)
 before exposing any endpoint.
 
