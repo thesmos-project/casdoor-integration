@@ -55,24 +55,23 @@ retain their distribution notices and sources. Each change is explained in
 Themes, OIDC, SAML and the underlying SCIM API come from Casdoor. The integration
 build keeps these features configurable through Casdoor's administrator UI/API.
 
-## Try the current version
+## Use the current release
 
-Current source: **`v4.15.0-thesmos.1-rc.4`**, based on Casdoor **`v4.15.0`**,
-targeting **`linux/amd64`**. The signed evaluation image is published at:
+Current release: **`v4.15.0-thesmos.1`**, based on Casdoor **`v4.15.0`**,
+targeting **`linux/amd64`**. The signed image is published at:
 
 ```text
-registry.thesmos.dev/thesmos/casdoor@sha256:619ebc3c11679db5af3fe0a559085c96d8e723e5b2580394c334d6ee28119ad6
+registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.1
 ```
 
-Pull it by this digest; the `v4.15.0-thesmos.1-rc.4` tag refers to the same image.
+Pin the digest shown in the [registry guide](docs/REGISTRY.md) for repeatable deployments.
 [Verify its signature and SBOM](docs/REGISTRY.md#verify-a-published-image) before use.
 
-This is an evaluation candidate. Use a disposable database and keep access on
-loopback while [production requirements](docs/RELEASE-STATUS.md) remain open.
-On a new database the image requires an initial administrator password file;
+Read the [release notes and upgrade considerations](docs/RELEASE-STATUS.md)
+before deploying, and use the [HTTPS recipe](recipes/README.md) for production. On a new database the image requires an initial administrator password file;
 see [secure startup](docs/CONFIGURATION.md#initial-administrator-and-secure-startup).
 
-Requires Git, Python 3, authenticated GitHub CLI and Docker with Buildx:
+To build the image yourself, you need Git, Python 3, an authenticated GitHub CLI and Docker with Buildx:
 
 ```sh
 python3 scripts/validate-project.py
@@ -88,7 +87,7 @@ databases and restricted roles.
 
 - [Configure themes, JWT claims, SAML and SCIM](docs/CONFIGURATION.md)
 - [Understand the patches](docs/PATCHES.md)
-- [Check version status and limitations](docs/RELEASE-STATUS.md)
+- [Read the release notes and limits](docs/RELEASE-STATUS.md)
 - [See validation coverage](docs/VALIDATION.md)
 - [Read the security review](docs/SECURITY-REVIEW.md)
 - [Read image source and licence information](docs/DISTRIBUTION.md)

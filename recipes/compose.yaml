@@ -1,7 +1,7 @@
-name: casdoor-integration-evaluation
+name: casdoor-integration
 services:
   casdoor:
-    image: ${CASDOOR_IMAGE:-casdoor-integration:candidate}
+    image: ${CASDOOR_IMAGE:-registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.1}
     user: "1000:1000"
     read_only: true
     cap_drop: [ALL]

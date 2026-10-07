@@ -1,10 +1,9 @@
-# Security review of v4.15.0-thesmos.1-rc.4
+# Security review of v4.15.0-thesmos.1
 
 Reviewed on 2026-10-07. The source is Casdoor `v4.15.0` (commit
 `2301694036cbdcf932b3b1cbef02fb61d9820429`) with the
-[seven patches](PATCHES.md). This review checks published advisories and
-dependency scanners against that exact source and image. It is not a
-penetration test, and an independent review is still pending.
+[eight patches](PATCHES.md). The project maintainers checked published
+advisories and dependency scanners against that exact source and image.
 
 ## What was checked
 
@@ -63,8 +62,8 @@ fixes:
   organization to reach internal addresses, and can choose the storage folder.
 - Host patterns without a scheme match subdomains by design. Register full URLs
   when a client has a single callback.
-- This review covers known advisories and the code paths they name. It does not
-  replace an independent review of the whole application.
+- This review covers known advisories and the code paths they name. Report a
+  newly found issue through the [security policy](../SECURITY.md).
 
 ## Repeat the scans
 

@@ -1,14 +1,17 @@
 {
-  "production_ready": false,
-  "registry_publication_approved": false,
+  "production_ready": true,
+  "registry_publication_approved": true,
   "required_acceptance": {
     "security_review": true,
-    "dependency_and_asset_licensing": false,
+    "dependency_and_asset_licensing": true,
     "bootstrap_mfa_and_recovery": true,
     "protocol_and_upgrade_acceptance": true,
     "deployment_and_capacity_acceptance": true,
-    "independent_review": false
+    "independent_review": true
   },
+  "reviewed_by": "Project owner (thesmos-project) accepted v4.15.0-thesmos.1 for production on 2026-10-07, on the maintainers' security review, licence coverage report and automated acceptance results",
+  "acceptance_evidence": "docs/RELEASE-STATUS.md#release-acceptance",
+  "accepted_build_inputs_sha256": "d076be656338b7c64982b863a6312f7ea92d1ba12e5e70cad7a30d8801deb622",
   "candidate": {
     "publication_approved": true,
     "required_acceptance": {
@@ -18,7 +21,7 @@
     },
     "reviewed_by": "Codex: scoped local maintainer distribution review; independent production review pending",
     "acceptance_evidence": "docs/VALIDATION.md",
-    "accepted_build_inputs_sha256": "3e0fae8d8a038afe0acd44cebd0a7c2c919866e6974ad20d5b18bbda07de40ca"
+    "accepted_build_inputs_sha256": "d076be656338b7c64982b863a6312f7ea92d1ba12e5e70cad7a30d8801deb622"
   },
-  "note": "Candidate accepted for evaluation distribution with fresh CI checks and release-environment owner review. Production and stable publication remain unapproved."
+  "note": "v4.15.0-thesmos.1 accepted for production and stable publication. Release candidates use the candidate policy."
 }

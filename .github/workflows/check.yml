@@ -1,4 +1,4 @@
-name: Check candidate
+name: Check build
 on:
   push:
     branches: [main]

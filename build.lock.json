@@ -4,5 +4,5 @@
   "node_image": "node:24.21.0-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20",
   "runtime_image": "alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6",
   "yarn_version": "1.22.22",
-  "version": "v4.15.0-thesmos.1-rc.4"
+  "version": "v4.15.0-thesmos.1"
 }

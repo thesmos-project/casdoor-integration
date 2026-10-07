@@ -72,15 +72,16 @@ Stop the component with:
 docker compose -f recipes/compose.yaml down
 ```
 
-The external database and the storage volumes are kept. To run the published
-evaluation image instead of a local build, set `CASDOOR_IMAGE` to its digest:
+The external database and the storage volumes are kept. To pin the published
+release to its exact digest, set `CASDOOR_IMAGE`:
 
 ```sh
-export CASDOOR_IMAGE=registry.thesmos.dev/thesmos/casdoor@sha256:619ebc3c11679db5af3fe0a559085c96d8e723e5b2580394c334d6ee28119ad6
+export CASDOOR_IMAGE=registry.thesmos.dev/thesmos/casdoor@sha256:RELEASE_DIGEST
 ```
 
 `CASDOOR_PORT` changes the host port; update the configured origin to
-match. The current default image is the locally built `casdoor-integration:candidate`.
+match. Without `CASDOOR_IMAGE`, the recipe uses the `v4.15.0-thesmos.1` release tag;
+for a local build, set `CASDOOR_IMAGE=casdoor-integration:candidate`.
 
 ## Configuration and storage
 

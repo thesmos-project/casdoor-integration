@@ -1,0 +1,357 @@
+diff --git a/certificate/account.go b/certificate/account.go
+index 437b9dc..d8457d8 100644
+--- a/certificate/account.go
++++ b/certificate/account.go
+@@ -1,4 +1,6 @@
+ // Copyright 2021 The casbin Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/certificate/dns.go b/certificate/dns.go
+index af7d783..59aec37 100644
+--- a/certificate/dns.go
++++ b/certificate/dns.go
+@@ -1,4 +1,6 @@
+ // Copyright 2021 The casbin Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/controllers/application.go b/controllers/application.go
+index 5f66b8d..262046b 100644
+--- a/controllers/application.go
++++ b/controllers/application.go
+@@ -1,4 +1,6 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/controllers/token.go b/controllers/token.go
+index ee15722..3bc485c 100644
+--- a/controllers/token.go
++++ b/controllers/token.go
+@@ -1,4 +1,6 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/controllers/types.go b/controllers/types.go
+index ce3b0be..28290fe 100644
+--- a/controllers/types.go
++++ b/controllers/types.go
+@@ -1,4 +1,6 @@
+ // Copyright 2022 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/main.go b/main.go
+index 7484038..cbce577 100644
+--- a/main.go
++++ b/main.go
+@@ -1,4 +1,6 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-07.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/object/adapter.go b/object/adapter.go
+index 71dad80..6df402b 100644
+--- a/object/adapter.go
++++ b/object/adapter.go
+@@ -1,4 +1,6 @@
+ // Copyright 2022 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-07.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/object/application.go b/object/application.go
+index a5634de..d94d254 100644
+--- a/object/application.go
++++ b/object/application.go
+@@ -1,4 +1,6 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/object/application_util.go b/object/application_util.go
+index 6b3c06f..6063fdc 100644
+--- a/object/application_util.go
++++ b/object/application_util.go
+@@ -1,5 +1,7 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
+ //
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
++//
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+ // You may obtain a copy of the License at
+diff --git a/object/application_util_test.go b/object/application_util_test.go
+index f2ab250..de995e0 100644
+--- a/object/application_util_test.go
++++ b/object/application_util_test.go
+@@ -1,5 +1,7 @@
+ // Copyright 2026 The Casdoor Authors. All Rights Reserved.
+ //
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
++//
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+ // You may obtain a copy of the License at
+diff --git a/object/init_data.go b/object/init_data.go
+index e0915db..06cc2e7 100644
+--- a/object/init_data.go
++++ b/object/init_data.go
+@@ -1,4 +1,6 @@
+ // Copyright 2022 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/object/ormer.go b/object/ormer.go
+index 3ee504b..bcd70b3 100644
+--- a/object/ormer.go
++++ b/object/ormer.go
+@@ -1,4 +1,6 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-07.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/object/saml_idp.go b/object/saml_idp.go
+index 700ee34..073226f 100644
+--- a/object/saml_idp.go
++++ b/object/saml_idp.go
+@@ -1,4 +1,6 @@
+ // Copyright 2022 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/object/session.go b/object/session.go
+index b2f4c25..902cc3d 100644
+--- a/object/session.go
++++ b/object/session.go
+@@ -1,4 +1,6 @@
+ // Copyright 2022 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-07.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/object/site_cert_account.go b/object/site_cert_account.go
+index 732c889..b26b9e7 100644
+--- a/object/site_cert_account.go
++++ b/object/site_cert_account.go
+@@ -1,4 +1,6 @@
+ // Copyright 2023 The casbin Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/object/site_cert_http.go b/object/site_cert_http.go
+index 3be6f3f..c1d75be 100644
+--- a/object/site_cert_http.go
++++ b/object/site_cert_http.go
+@@ -1,4 +1,6 @@
+ // Copyright 2023 The casbin Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/object/syncer.go b/object/syncer.go
+index e504ee7..07be067 100644
+--- a/object/syncer.go
++++ b/object/syncer.go
+@@ -1,5 +1,7 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
+ //
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
++//
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+ // You may obtain a copy of the License at
+diff --git a/object/syncer_database.go b/object/syncer_database.go
+index 45956b8..a22e51c 100644
+--- a/object/syncer_database.go
++++ b/object/syncer_database.go
+@@ -1,5 +1,7 @@
+ // Copyright 2025 The Casdoor Authors. All Rights Reserved.
+ //
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
++//
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+ // You may obtain a copy of the License at
+diff --git a/object/syncer_scim.go b/object/syncer_scim.go
+index 9ee1cb2..2079231 100644
+--- a/object/syncer_scim.go
++++ b/object/syncer_scim.go
+@@ -1,4 +1,6 @@
+ // Copyright 2025 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/object/token.go b/object/token.go
+index ce259b5..340b242 100644
+--- a/object/token.go
++++ b/object/token.go
+@@ -1,4 +1,6 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/object/token_jwt.go b/object/token_jwt.go
+index 596f7aa..084c5b1 100644
+--- a/object/token_jwt.go
++++ b/object/token_jwt.go
+@@ -1,4 +1,6 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/object/token_oauth.go b/object/token_oauth.go
+index 1d0b97a..35e4ce2 100644
+--- a/object/token_oauth.go
++++ b/object/token_oauth.go
+@@ -1,4 +1,6 @@
+ // Copyright 2024 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/object/token_oauth_util.go b/object/token_oauth_util.go
+index 7e35129..65a997b 100644
+--- a/object/token_oauth_util.go
++++ b/object/token_oauth_util.go
+@@ -1,4 +1,6 @@
+ // Copyright 2024 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/object/token_standard_jwt.go b/object/token_standard_jwt.go
+index fa2879d..908f595 100644
+--- a/object/token_standard_jwt.go
++++ b/object/token_standard_jwt.go
+@@ -1,4 +1,6 @@
+ // Copyright 2024 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-06.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/object/viaSSHDialer.go b/object/viaSSHDialer.go
+index 56aa195..954f328 100644
+--- a/object/viaSSHDialer.go
++++ b/object/viaSSHDialer.go
+@@ -1,5 +1,7 @@
+ // Copyright 2024 The Casdoor Authors. All Rights Reserved.
+ //
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
++//
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+ // You may obtain a copy of the License at
+diff --git a/radius/server.go b/radius/server.go
+index 09ff9a1..1bdb388 100644
+--- a/radius/server.go
++++ b/radius/server.go
+@@ -1,4 +1,6 @@
+ // Copyright 2023 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-07.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/scim/group_handler.go b/scim/group_handler.go
+index b06eb0a..92ab8fe 100644
+--- a/scim/group_handler.go
++++ b/scim/group_handler.go
+@@ -1,4 +1,6 @@
+ // Copyright 2026 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/scim/server.go b/scim/server.go
+index 117c334..1b092d5 100644
+--- a/scim/server.go
++++ b/scim/server.go
+@@ -1,4 +1,6 @@
+ // Copyright 2023 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/scim/user_handler.go b/scim/user_handler.go
+index c920b9e..d447383 100644
+--- a/scim/user_handler.go
++++ b/scim/user_handler.go
+@@ -1,4 +1,6 @@
+ // Copyright 2023 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/scim/util.go b/scim/util.go
+index 29f4e3e..992302c 100644
+--- a/scim/util.go
++++ b/scim/util.go
+@@ -1,4 +1,6 @@
+ // Copyright 2023 The Casdoor Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/service/oauth.go b/service/oauth.go
+index 57ef850..2d618f4 100644
+--- a/service/oauth.go
++++ b/service/oauth.go
+@@ -1,4 +1,6 @@
+ // Copyright 2023 The casbin Authors. All Rights Reserved.
++//
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
+ // Modified for the Thesmos integration evaluation, 2026-10-05.
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+diff --git a/web/src/pages/SyncerEditPage.tsx b/web/src/pages/SyncerEditPage.tsx
+index ab6ddea..88f4886 100644
+--- a/web/src/pages/SyncerEditPage.tsx
++++ b/web/src/pages/SyncerEditPage.tsx
+@@ -1,3 +1,6 @@
++// Part of Casdoor, licensed under the Apache License 2.0.
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
++
+ import i18next from "i18next";
+ import {useParams} from "react-router-dom";
+ import {Button} from "@/components/ui/button";

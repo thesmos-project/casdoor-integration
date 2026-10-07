@@ -1,17 +1,17 @@
 # Registry publishing and image verification
 
-The current evaluation image is `registry.thesmos.dev/thesmos/casdoor@sha256:619ebc3c11679db5af3fe0a559085c96d8e723e5b2580394c334d6ee28119ad6`.
+The current release is `registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.1`.
 This guide describes how to verify it and how maintainers publish new versions.
 Local builds do not require registry credentials.
 
 ## Verify a published image
 
 Use the complete image repository and immutable `sha256:` digest. For the current
-evaluation image, set:
+release, set:
 
 ```sh
 IMAGE_REPOSITORY=registry.thesmos.dev/thesmos/casdoor
-IMAGE_DIGEST=sha256:619ebc3c11679db5af3fe0a559085c96d8e723e5b2580394c334d6ee28119ad6
+IMAGE_DIGEST=sha256:RELEASE_DIGEST
 ```
 
 Then run:
@@ -29,8 +29,9 @@ cosign verify-attestation --type spdxjson \
 ```
 
 A verified signature identifies the publishing workflow. Check the source
-revision, release channel and [release limitations](RELEASE-STATUS.md) as well;
-a signed candidate is still an evaluation build.
+revision and release channel as well: release candidates (`-rc.N`) are
+pre-release builds, and stable versions have no suffix. See the
+[release notes](RELEASE-STATUS.md).
 
 ## Maintainer settings
 

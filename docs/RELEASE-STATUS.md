@@ -1,13 +1,12 @@
-# Current version and limitations
+# Release notes and limits
 
 | Item | Status |
 | --- | --- |
-| Version | `v4.15.0-thesmos.1-rc.4` |
-| Source | Casdoor `v4.15.0` plus the [seven published patches](PATCHES.md) |
+| Version | `v4.15.0-thesmos.1` |
+| Source | Casdoor `v4.15.0` plus the [eight published patches](PATCHES.md) |
 | Platform | `linux/amd64` |
 | Deployment | Compose recipe with an optional Caddy HTTPS overlay |
-| Registry distribution | Signed evaluation image `registry.thesmos.dev/thesmos/casdoor@sha256:619ebc3c11679db5af3fe0a559085c96d8e723e5b2580394c334d6ee28119ad6` |
-| Production release | None; this candidate is not approved for production |
+| Image | Signed release `registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.1` |
 
 The [README](../README.md) describes the available capabilities. The
 [validation summary](VALIDATION.md) explains what automated checks cover.
@@ -54,6 +53,10 @@ certificates on every restart; keep the image default `true`.
 
 ## Upgrade considerations
 
+The Compose recipe's project is now named `casdoor-integration`. To keep the
+storage volumes of a deployment started from a release candidate, set
+`COMPOSE_PROJECT_NAME=casdoor-integration-evaluation` when running Compose.
+
 A redirect URI registered as a full URL now matches only that exact host. A
 client that signs in from a subdomain of a registered URL fails with an invalid
 redirect URI; register each callback URL, or use a host pattern without a scheme
@@ -91,15 +94,13 @@ the previous algorithm.
 Changing an existing SAML NameID policy can require service-provider account
 relinking. Test these changes against the existing deployment before upgrading.
 
-## Production work still required
+## Release acceptance
 
-Production approval remains open for exact-source advisory analysis and independent
-security review. The HTTPS overlay, persistent storage and capacity are covered by
-the [HTTPS and capacity tests](VALIDATION.md). Upgrade, rollback, key rotation and backup restore are covered by the
-[upgrade acceptance test](VALIDATION.md); OIDC, SAML and SCIM with Thesmos were
-accepted over a TLS proxy in a separate evaluation stack.
-Dependency and asset licensing also require review for the accepted release.
-
-Passing compilation, regression tests or an image signature does not close those
-requirements. Stable publication is blocked by [release-policy.json](../release-policy.json).
-See [maintenance and release instructions](../MAINTENANCE.md) for the release process.
+This release passed the [security review](SECURITY-REVIEW.md), the licence and
+source coverage check of [distribution material](DISTRIBUTION.md), and the
+[automated acceptance tests](VALIDATION.md): secure startup, MFA and recovery,
+upgrade, rollback, key rotation and backup restore, HTTPS, and capacity. OIDC,
+SAML and SCIM were tested with Thesmos over TLS. The project maintainers
+accepted the release; [release-policy.json](../release-policy.json) records the
+acceptance and the exact build inputs. See
+[maintenance and release instructions](../MAINTENANCE.md) for the release process.

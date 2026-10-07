@@ -2,7 +2,7 @@
   "repository": "https://github.com/casdoor/casdoor.git",
   "tag": "v4.15.0",
   "commit": "2301694036cbdcf932b3b1cbef02fb61d9820429",
-  "status": "source-candidate-not-production-approved",
+  "status": "release",
   "patches": [
     {
       "path": "patches/casdoor-integration.patch",
@@ -10,33 +10,38 @@
       "purpose": "SCIM behavior, typed JWT claims, persistent SAML NameIDs, OAuth redirect binding, retained signing-key support and concurrent sign-in session bookkeeping."
     },
     {
-      "path": "patches/casdoor-security-candidate.patch",
+      "path": "patches/casdoor-security.patch",
       "sha256": "93b252e3172215bed66fc435db44e45f4aec24b7ac977db87318fadfec053600",
       "purpose": "Go dependency updates, maintained ACME implementation and SAML regression coverage."
     },
     {
-      "path": "patches/casdoor-frontend-candidate.patch",
+      "path": "patches/casdoor-frontend.patch",
       "sha256": "2ad1f36bbd32b48d6c07752b15031193251a5d6aa79b95c9e6c3d7ffbdae6346",
       "purpose": "Frontend runtime dependency updates, including SheetJS from its official distribution."
     },
     {
-      "path": "patches/casdoor-build-chain-candidate.patch",
+      "path": "patches/casdoor-build-chain.patch",
       "sha256": "15f16374b94f35374a8ded051a9d7a60c857de01cbdf9301f1fa8471ffd5e41f",
       "purpose": "Frontend build dependency updates."
     },
     {
-      "path": "patches/casdoor-claim-configuration-candidate.patch",
+      "path": "patches/casdoor-claim-configuration.patch",
       "sha256": "ebee4dc53db46f7bd19fc9a4a039b6257f6883118eaaed55641a0a5a8843cc85",
       "purpose": "Validate claim configuration and restrict partial application writes."
     },
     {
-      "path": "patches/casdoor-ldap-license-candidate.patch",
+      "path": "patches/casdoor-ldap-license.patch",
       "sha256": "b5f153841ed37374899a7a6e920aabaa6ec94f249c461f820fe3a5808176b0e8"
     },
     {
-      "path": "patches/casdoor-secure-startup-candidate.patch",
+      "path": "patches/casdoor-secure-startup.patch",
       "sha256": "6aef21712614f0c67e3ae964364892ede2507e00be69a1c66489175437c18fe8",
       "purpose": "Set the built-in administrator password from a bootstrap secret before serving, refuse unsafe startup settings, disable RADIUS without a port, and bound the database connection pool."
+    },
+    {
+      "path": "patches/casdoor-modification-notices.patch",
+      "sha256": "0d051c2fb791b7ac55c122cd6cfa43d95460347dac970d65340d62d3cded75cd",
+      "purpose": "Notice in each modified Casdoor source file that it was changed, as the Apache License 2.0 requires."
     }
   ]
 }

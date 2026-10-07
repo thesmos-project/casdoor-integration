@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate build inputs and fail closed when registry publication is unapproved."""
+"""Validate build inputs, and refuse publication that release-policy.json does not accept."""
 import argparse
 import hashlib
 import json
@@ -92,7 +92,7 @@ def main():
             raise ValueError("Candidate publishing is blocked: acceptance does not match current build inputs")
         if not candidate.get("acceptance_evidence") or not candidate.get("reviewed_by"):
             raise ValueError("Candidate publishing is blocked: evidence and reviewer are required")
-    print(f"Validated {len(source['patches'])} pinned patches and build inputs" + (" for release" if options.release else "; production approval remains separate"))
+    print(f"Validated {len(source['patches'])} pinned patches and build inputs" + (" for release" if options.release else ""))
 
 
 if __name__ == "__main__":

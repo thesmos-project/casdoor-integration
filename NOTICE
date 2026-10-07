@@ -8,7 +8,8 @@ Casdoor is licensed under Apache License 2.0.
 This repository is an independently maintained integration project. It does not
 claim authorship of Casdoor or imply endorsement by its developers. Casdoor modifications are
 distributed as an ordered patch series, with the exact upstream revision and
-checksums in upstream.lock.json. Prepared source records every modified path in
+checksums in upstream.lock.json. Each modified Casdoor source file states that it was
+changed, and prepared source records every modified path in
 integration-provenance.json. Go dependency manifests, the frontend package
 manifest and Yarn lockfile contain integration dependency updates. The example
 server configuration is derived from upstream and marked as modified.
@@ -27,4 +28,3 @@ FreeType licence, copyright and accompanying notices are retained in the image.
 The LDAP message dependency is pinned to its author's MIT release commit.
 This changes its licence from the older dependency revision, with identical
 non-licence source files. It does not claim authorship of that dependency.
-Candidate distribution and stable production acceptance are separate records.
