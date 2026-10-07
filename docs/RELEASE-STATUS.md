@@ -2,11 +2,11 @@
 
 | Item | Status |
 | --- | --- |
-| Version | `v4.15.0-thesmos.1-rc.3` |
+| Version | `v4.15.0-thesmos.1-rc.4` |
 | Source | Casdoor `v4.15.0` plus the [seven published patches](PATCHES.md) |
 | Platform | `linux/amd64` |
 | Deployment | Compose recipe with an optional Caddy HTTPS overlay |
-| Registry distribution | Signed evaluation image `registry.thesmos.dev/thesmos/casdoor@sha256:8f0b2b28fe0741635f52f42bc79139242a1560db29042c4d27414ec4c347106a` |
+| Registry distribution | Signed evaluation image `registry.thesmos.dev/thesmos/casdoor@sha256:619ebc3c11679db5af3fe0a559085c96d8e723e5b2580394c334d6ee28119ad6` |
 | Production release | None; this candidate is not approved for production |
 
 The [README](../README.md) describes the available capabilities. The

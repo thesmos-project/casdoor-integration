@@ -76,7 +76,7 @@ The external database and the storage volumes are kept. To run the published
 evaluation image instead of a local build, set `CASDOOR_IMAGE` to its digest:
 
 ```sh
-export CASDOOR_IMAGE=registry.thesmos.dev/thesmos/casdoor@sha256:8f0b2b28fe0741635f52f42bc79139242a1560db29042c4d27414ec4c347106a
+export CASDOOR_IMAGE=registry.thesmos.dev/thesmos/casdoor@sha256:619ebc3c11679db5af3fe0a559085c96d8e723e5b2580394c334d6ee28119ad6
 ```
 
 `CASDOOR_PORT` changes the host port; update the configured origin to

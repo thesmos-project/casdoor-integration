@@ -1,6 +1,6 @@
 # Security
 
-`v4.15.0-thesmos.1-rc.3` is an evaluation candidate, published as a signed image
+`v4.15.0-thesmos.1-rc.4` is an evaluation candidate, published as a signed image
 for evaluation. There are no supported production releases. See
 [version limitations](docs/RELEASE-STATUS.md), including initial administrator setup.
 The [security review](docs/SECURITY-REVIEW.md) lists the advisories checked

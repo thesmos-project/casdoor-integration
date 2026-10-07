@@ -57,14 +57,14 @@ build keeps these features configurable through Casdoor's administrator UI/API.
 
 ## Try the current version
 
-Current source: **`v4.15.0-thesmos.1-rc.3`**, based on Casdoor **`v4.15.0`**,
+Current source: **`v4.15.0-thesmos.1-rc.4`**, based on Casdoor **`v4.15.0`**,
 targeting **`linux/amd64`**. The signed evaluation image is published at:
 
 ```text
-registry.thesmos.dev/thesmos/casdoor@sha256:8f0b2b28fe0741635f52f42bc79139242a1560db29042c4d27414ec4c347106a
+registry.thesmos.dev/thesmos/casdoor@sha256:619ebc3c11679db5af3fe0a559085c96d8e723e5b2580394c334d6ee28119ad6
 ```
 
-Pull it by this digest; the `v4.15.0-thesmos.1-rc.3` tag refers to the same image.
+Pull it by this digest; the `v4.15.0-thesmos.1-rc.4` tag refers to the same image.
 [Verify its signature and SBOM](docs/REGISTRY.md#verify-a-published-image) before use.
 
 This is an evaluation candidate. Use a disposable database and keep access on

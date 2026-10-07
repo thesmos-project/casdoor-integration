@@ -1,7 +1,7 @@
 # Automated validation coverage
 
 This document describes checks provided by the builder and workflows for
-`v4.15.0-thesmos.1-rc.3`. It is not a certification of production security or
+`v4.15.0-thesmos.1-rc.4`. It is not a certification of production security or
 compatibility with every OIDC, SAML or SCIM client.
 The [security review](SECURITY-REVIEW.md) records the advisory and dependency
 scans of the source and image.
