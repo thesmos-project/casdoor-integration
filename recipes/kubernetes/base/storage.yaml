@@ -1,0 +1,20 @@
+# Uploaded files (avatars, logos) and file-backed sessions survive restarts.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: casdoor-files
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: casdoor-sessions
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 256Mi

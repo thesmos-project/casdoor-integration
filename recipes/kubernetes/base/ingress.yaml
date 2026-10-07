@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: casdoor
+spec:
+  tls:
+    - hosts: [auth.example.com]
+      secretName: casdoor-tls
+  rules:
+    - host: auth.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: casdoor
+                port:
+                  name: http

@@ -28,8 +28,8 @@ ARG INTEGRATION_VERSION
 ARG UPSTREAM_COMMIT
 RUN test "$TARGETARCH" = amd64
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=1 go test -race -p 2 ./object ./scim ./certificate \
-      -run 'TestEvaluation|TestSCIM|TestGetSyncerProviderSCIM|TestSyncerSshTunnel|TestRedirectUriMatchesPattern' -count=1 \
+    CGO_ENABLED=1 go test -race -p 2 ./object ./scim ./certificate ./routers \
+      -run 'TestEvaluation|TestSCIM|TestGetSyncerProviderSCIM|TestSyncerSshTunnel|TestRedirectUriMatchesPattern|TestSecureCookieFilter' -count=1 \
     && CGO_ENABLED=1 go test -race -p 2 ./ldap -count=1
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 go build -p 2 -mod=readonly -trimpath -buildvcs=false \

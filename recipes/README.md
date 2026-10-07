@@ -3,7 +3,8 @@
 This recipe runs one Casdoor instance against an existing PostgreSQL database.
 On its own it serves `http://localhost:19080` on loopback; with the HTTPS overlay
 it serves a public host name through a Caddy reverse proxy. It starts Casdoor
-only; run Thesmos separately.
+only; run Thesmos separately. For a cluster, use the
+[Kubernetes recipe](kubernetes/README.md).
 
 ## Prepare configuration
 
@@ -80,7 +81,7 @@ export CASDOOR_IMAGE=registry.thesmos.dev/thesmos/casdoor@sha256:RELEASE_DIGEST
 ```
 
 `CASDOOR_PORT` changes the host port; update the configured origin to
-match. Without `CASDOOR_IMAGE`, the recipe uses the `v4.15.0-thesmos.1` release tag;
+match. Without `CASDOOR_IMAGE`, the recipe uses the `v4.15.0-thesmos.2` release tag;
 for a local build, set `CASDOOR_IMAGE=casdoor-integration:candidate`.
 
 ## Configuration and storage

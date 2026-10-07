@@ -1,0 +1,22 @@
+# Only Traefik may connect to Casdoor. Outgoing traffic stays open: Casdoor
+# reaches its database, identity providers, email and webhooks.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: casdoor-from-traefik
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: casdoor
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - port: 8000
+          protocol: TCP

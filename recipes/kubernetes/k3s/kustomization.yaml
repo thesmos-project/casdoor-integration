@@ -1,0 +1,21 @@
+# k3s and its bundled Traefik: namespace, HTTPS redirect, HSTS and security
+# headers, and a network policy that admits only Traefik. See ../README.md.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: casdoor
+resources:
+  - namespace.yaml
+  - ../base
+  - traefik.yaml
+  - network-policy.yaml
+patches:
+  - target:
+      kind: Ingress
+      name: casdoor
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.tls: "true"
+          traefik.ingress.kubernetes.io/router.middlewares: casdoor-security-headers@kubernetescrd

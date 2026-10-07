@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: casdoor
+spec:
+  # One instance: sessions are files on the casdoor-sessions volume. Running more
+  # instances needs redisEndpoint and shared storage; see ../README.md.
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: casdoor
+          image: registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.2
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: GOMEMLIMIT
+              value: 256MiB
+            - name: GOMAXPROCS
+              value: "1"
+            - name: logConfig
+              value: '{"adapter":"console","level":4}'
+            - name: initDataNewOnly
+              value: "true"
+            # The Ingress terminates HTTPS; Casdoor marks its cookies Secure itself.
+            - name: sessionCookieSecure
+              value: "true"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 384Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+              readOnly: true
+            - name: files
+              mountPath: /files
+            - name: sessions
+              mountPath: /tmp
+      volumes:
+        # app.conf, admin-password and db-ca.pem; see ../example/kustomization.yaml
+        - name: config
+          secret:
+            secretName: casdoor-config
+            defaultMode: 0440
+        - name: files
+          persistentVolumeClaim:
+            claimName: casdoor-files
+        - name: sessions
+          persistentVolumeClaim:
+            claimName: casdoor-sessions

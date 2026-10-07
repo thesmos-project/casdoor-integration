@@ -1,7 +1,7 @@
 # Automated validation coverage
 
 This document describes checks provided by the builder and workflows for
-`v4.15.0-thesmos.1`. Each row names what the check exercises; test clients and
+`v4.15.0-thesmos.2`. Each row names what the check exercises; test clients and
 deployments outside these scenarios in your own setup.
 The [security review](SECURITY-REVIEW.md) records the advisory and dependency
 scans of the source and image.
@@ -17,6 +17,7 @@ scans of the source and image.
 | Runtime restrictions | Nonroot execution with a read-only filesystem and dropped capabilities. |
 | Upgrade and recovery | [upgrade-acceptance.py](../scripts/upgrade-acceptance.py) starts the latest published release on the same PostgreSQL/TLS recipe, creates an organization, client, user, theme and tokens, then upgrades to the new version, rolls back, upgrades again, rotates the signing key with a retained previous key and restores a database backup into a new database. After each step it checks settings, signing keys, earlier tokens and refresh tokens. |
 | HTTPS recipe | [https-acceptance.py](../scripts/https-acceptance.py) runs `recipes/compose.https.yaml` with Caddy's local authority: HTTP redirect, verified certificate and HSTS, HTTPS OIDC issuer, `Secure` and `HttpOnly` session cookies, a forged `X-Forwarded-For` ignored, and uploaded files and sessions surviving a restart. |
+| Kubernetes recipe | [kubernetes-acceptance.py](../scripts/kubernetes-acceptance.py) runs the k3s overlay on a disposable k3d cluster with TLS PostgreSQL: non-root, read-only pod without capabilities, HTTP redirect, verified certificate and HSTS, HTTPS OIDC issuer, bootstrap administrator sign-in, `Secure` and `HttpOnly` session cookies set by Casdoor, a forged `X-Forwarded-For` ignored, a network policy that blocks other workloads and admits the ingress controller, and uploaded files and sessions surviving a restart. |
 | Capacity | [capacity-acceptance.py](../scripts/capacity-acceptance.py) loads the recipe within its limits; see [measured capacity](#measured-capacity). |
 | Deployment recipe | [recipe-acceptance.py](../scripts/recipe-acceptance.py) runs the unchanged Compose recipe against disposable PostgreSQL with a restricted role and verified TLS: refusal without the bootstrap secret, rejection of `admin/123`, TOTP MFA enrollment and enforced second factor, wrong-code rejection, one-time recovery code, MFA and password kept across restart and secret rotation, and lockout after five wrong passwords. |
 | Publication | Registry upload probe, image signing, SPDX attestation verification and a smoke test of the pulled digest. An optional public mirror must also pass anonymous pull and signature/attestation verification. |

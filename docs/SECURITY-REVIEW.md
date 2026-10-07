@@ -1,6 +1,9 @@
-# Security review of v4.15.0-thesmos.1
+# Security review
 
-Reviewed on 2026-10-07. The source is Casdoor `v4.15.0` (commit
+Reviewed on 2026-10-07 for `v4.15.0-thesmos.1`. `v4.15.0-thesmos.2` adds the
+`sessionCookieSecure` option and the Kubernetes recipe, with no dependency changes.
+
+The source is Casdoor `v4.15.0` (commit
 `2301694036cbdcf932b3b1cbef02fb61d9820429`) with the
 [eight patches](PATCHES.md). The project maintainers checked published
 advisories and dependency scanners against that exact source and image.

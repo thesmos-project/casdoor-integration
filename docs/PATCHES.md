@@ -84,6 +84,12 @@ keeps the built-in policy adapters on two connections each. Without a limit,
 also block other applications sharing it.
 See [secure startup](CONFIGURATION.md#initial-administrator-and-secure-startup).
 
+Behind an HTTPS proxy, Casdoor sends its session cookie without `Secure`, because
+its web framework adds it only when Casdoor terminates TLS itself. The option
+`sessionCookieSecure` marks every cookie `Secure`, so deployments such as a
+Kubernetes Ingress no longer depend on the proxy rewriting cookies. See
+[server configuration](CONFIGURATION.md#server-configuration-and-persistence).
+
 ## Close redirect and SSH tunnel gaps
 
 Upstream Casdoor accepts every subdomain of a redirect URI registered as a full
@@ -123,7 +129,7 @@ SHA-256 checksums. Original Casdoor headers and authorship are preserved.
 | [Build dependencies](../patches/casdoor-build-chain.patch) | Frontend build/test dependencies. |
 | [Claim configuration](../patches/casdoor-claim-configuration.patch) | Save-time validation and selected-field application updates. |
 | [LDAP licence](../patches/casdoor-ldap-license.patch) | Author-provided MIT dependency revision. |
-| [Secure startup](../patches/casdoor-secure-startup.patch) | Bootstrap administrator password, unsafe-setting refusal and RADIUS port handling. |
+| [Secure startup](../patches/casdoor-secure-startup.patch) | Bootstrap administrator password, unsafe-setting refusal, RADIUS port handling and Secure cookies behind a proxy. |
 | [Modification notices](../patches/casdoor-modification-notices.patch) | A line in each modified Casdoor source file stating that it was changed, as the Apache License 2.0 requires. |
 
 Before deploying or upgrading, read [version limits and compatibility changes](RELEASE-STATUS.md).

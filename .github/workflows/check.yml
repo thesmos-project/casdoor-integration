@@ -54,6 +54,17 @@ jobs:
         run: python3 scripts/https-acceptance.py
       - name: Measure capacity within the recipe limits
         run: python3 scripts/capacity-acceptance.py
+      - name: Install pinned k3d and kubectl
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          curl -fsSLo "$RUNNER_TEMP/bin/k3d" https://github.com/k3d-io/k3d/releases/download/v5.9.0/k3d-linux-amd64
+          echo "06d8f25bc3a971c4eb29e0ff08429b180402db0f4dec838c9eac427e296800a0  $RUNNER_TEMP/bin/k3d" | sha256sum -c -
+          curl -fsSLo "$RUNNER_TEMP/bin/kubectl" https://dl.k8s.io/release/v1.37.1/bin/linux/amd64/kubectl
+          echo "65691ff77eb6fa44c908b77a1082c9f092c3b9733b5cefabec0d1104890e21a8  $RUNNER_TEMP/bin/kubectl" | sha256sum -c -
+          chmod +x "$RUNNER_TEMP/bin/k3d" "$RUNNER_TEMP/bin/kubectl"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Verify the Kubernetes recipe on k3s
+        run: python3 scripts/kubernetes-acceptance.py
       - name: Record candidate image identity
         run: docker image inspect casdoor-integration:candidate --format '{{json .}}' > .local/image-inspection.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -69,6 +80,7 @@ jobs:
             .local/upgrade-acceptance.json
             .local/https-acceptance.json
             .local/capacity-acceptance.json
+            .local/kubernetes-acceptance.json
             .local/distribution.spdx.json
           include-hidden-files: true
           retention-days: 14

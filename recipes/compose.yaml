@@ -1,7 +1,7 @@
 name: casdoor-integration
 services:
   casdoor:
-    image: ${CASDOOR_IMAGE:-registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.1}
+    image: ${CASDOOR_IMAGE:-registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.2}
     user: "1000:1000"
     read_only: true
     cap_drop: [ALL]

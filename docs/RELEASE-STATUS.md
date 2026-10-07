@@ -2,11 +2,11 @@
 
 | Item | Status |
 | --- | --- |
-| Version | `v4.15.0-thesmos.1` |
+| Version | `v4.15.0-thesmos.2` |
 | Source | Casdoor `v4.15.0` plus the [eight published patches](PATCHES.md) |
 | Platform | `linux/amd64` |
-| Deployment | Compose recipe with an optional Caddy HTTPS overlay |
-| Image | Signed release `registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.1` |
+| Deployment | Compose recipe with an optional Caddy HTTPS overlay; Kubernetes recipe with a k3s overlay |
+| Image | Signed release `registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.2` |
 
 The [README](../README.md) describes the available capabilities. The
 [validation summary](VALIDATION.md) explains what automated checks cover.
@@ -44,8 +44,9 @@ certificates on every restart; keep the image default `true`.
   Flows in both directions need an explicit authority and loop prevention.
 - JWT certificate retention does not add retained keys to application-specific
   JWKS or implement SAML certificate rollover.
-- The Compose recipe runs one Casdoor instance; sessions are files in that
-  container. Multiple instances need `redisEndpoint`. No Kubernetes recipe is provided.
+- The Compose and Kubernetes recipes run one Casdoor instance; sessions are files
+  on a volume. Multiple instances need `redisEndpoint` and object storage for uploads;
+  see the [Kubernetes recipe](../recipes/kubernetes/README.md#storage-and-scaling).
 - [Measured capacity](VALIDATION.md#measured-capacity) applies to the recipe's
   limits on the test host; size `cpus` for the expected sign-in rate.
 - Thesmos Enterprise features need the corresponding edition and licence; this
@@ -99,7 +100,8 @@ relinking. Test these changes against the existing deployment before upgrading.
 This release passed the [security review](SECURITY-REVIEW.md), the licence and
 source coverage check of [distribution material](DISTRIBUTION.md), and the
 [automated acceptance tests](VALIDATION.md): secure startup, MFA and recovery,
-upgrade, rollback, key rotation and backup restore, HTTPS, and capacity. OIDC,
+upgrade, rollback, key rotation and backup restore, HTTPS, Kubernetes on k3s,
+and capacity. OIDC,
 SAML and SCIM were tested with Thesmos over TLS. The project maintainers
 accepted the release; [release-policy.json](../release-policy.json) records the
 acceptance and the exact build inputs. See

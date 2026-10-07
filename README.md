@@ -2,7 +2,7 @@
 
 A patched Casdoor build for OIDC/SAML sign-in, SCIM user/group provisioning
 and configurable JWT claims. This repository supplies the patches, image builder
-and a local Compose recipe.
+and Compose and Kubernetes recipes.
 
 Casdoor is developed by the [Casdoor project and its contributors](https://github.com/casdoor/casdoor).
 Thesmos maintains these integration changes independently. The original authorship,
@@ -29,7 +29,7 @@ The patches and builder are available for reuse under their published licences.
 | Provision a Thesmos Enterprise directory from Casdoor | A SCIM provisioner reads Casdoor's users/groups and writes them to Thesmos. Our SCIM response and stable SAML identity changes support this flow. |
 | Set application authorization claims | Administrator-configured JWT fields and typed JSON values, validated before saving. |
 | Customize the login experience | Casdoor's organization/application theme and branding settings, saved in its database. |
-| Run Casdoor alongside Thesmos | A rebuilt container and local Compose recipe, with PostgreSQL configuration and runtime limits. |
+| Run Casdoor alongside Thesmos | A rebuilt container with Compose and Kubernetes (k3s) recipes, PostgreSQL configuration and runtime limits. |
 
 ## How SCIM provisioning works
 
@@ -57,11 +57,11 @@ build keeps these features configurable through Casdoor's administrator UI/API.
 
 ## Use the current release
 
-Current release: **`v4.15.0-thesmos.1`**, based on Casdoor **`v4.15.0`**,
+Current release: **`v4.15.0-thesmos.2`**, based on Casdoor **`v4.15.0`**,
 targeting **`linux/amd64`**. The signed image is published at:
 
 ```text
-registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.1
+registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.2
 ```
 
 Pin the digest shown in the [registry guide](docs/REGISTRY.md) for repeatable deployments.
@@ -79,7 +79,7 @@ python3 scripts/build-image.py
 ```
 
 The output is `casdoor-integration:candidate`. Follow the
-[Compose setup instructions](recipes/README.md) to configure PostgreSQL and start
+[Compose setup instructions](recipes/README.md) or the [Kubernetes recipe](recipes/kubernetes/README.md) to configure PostgreSQL and start
 Casdoor. A single PostgreSQL server can host both applications using separate
 databases and restricted roles.
 

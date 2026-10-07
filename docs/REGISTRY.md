@@ -1,6 +1,6 @@
 # Registry publishing and image verification
 
-The current release is `registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.1`.
+The current release is `registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.2`.
 This guide describes how to verify it and how maintainers publish new versions.
 Local builds do not require registry credentials.
 

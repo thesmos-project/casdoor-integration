@@ -1,0 +1,14 @@
+# Casdoor for any Kubernetes cluster: one instance, persistent uploads and sessions,
+# configuration from a Secret and an HTTPS Ingress. See ../README.md.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - pairs:
+      app.kubernetes.io/name: casdoor
+      app.kubernetes.io/part-of: casdoor-integration
+    includeSelectors: true
+resources:
+  - deployment.yaml
+  - service.yaml
+  - storage.yaml
+  - ingress.yaml

@@ -1,5 +1,5 @@
 # Derived from Casdoor v4.15.0 conf/app.conf; modified for the integration image.
-# Configure a disposable PostgreSQL database before use. Not a production recipe.
+# Set dataSourceName, origin and originFrontend before use.
 # Secure startup reads the initial administrator password from this file.
 bootstrapAdminPasswordFile = /conf/admin-password
 appname = casdoor

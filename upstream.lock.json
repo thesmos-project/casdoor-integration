@@ -35,12 +35,12 @@
     },
     {
       "path": "patches/casdoor-secure-startup.patch",
-      "sha256": "6aef21712614f0c67e3ae964364892ede2507e00be69a1c66489175437c18fe8",
+      "sha256": "5bae78ae601ab11f0b12b6438d2f15cd988bc8d7111a0e814b20769b9cc1179a",
       "purpose": "Set the built-in administrator password from a bootstrap secret before serving, refuse unsafe startup settings, disable RADIUS without a port, and bound the database connection pool."
     },
     {
       "path": "patches/casdoor-modification-notices.patch",
-      "sha256": "0d051c2fb791b7ac55c122cd6cfa43d95460347dac970d65340d62d3cded75cd",
+      "sha256": "9e670b4bdd638664c44188fc7fb38af77e46c4063ad3c9c7d4048e83e8b07263",
       "purpose": "Notice in each modified Casdoor source file that it was changed, as the Apache License 2.0 requires."
     }
   ]

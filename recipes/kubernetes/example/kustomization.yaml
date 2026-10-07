@@ -1,0 +1,42 @@
+# Copy this directory, add the three files listed under secretGenerator, set
+# your host name, then apply it:  kubectl apply -k <directory>
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Keep in step with the namespace of the k3s overlay.
+namespace: casdoor
+resources:
+  # Or a pinned remote base, for example:
+  # https://github.com/thesmos-project/casdoor-integration//recipes/kubernetes/k3s?ref=<commit>
+  - ../k3s
+secretGenerator:
+  - name: casdoor-config
+    files:
+      - app.conf
+      - admin-password
+      - db-ca.pem
+images:
+  # Pin the release digest from docs/REGISTRY.md.
+  - name: registry.thesmos.dev/thesmos/casdoor
+    digest: sha256:RELEASE_DIGEST
+patches:
+  - target:
+      kind: Ingress
+      name: casdoor
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: auth.example.com
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: auth.example.com
+      # With cert-manager, request the certificate stored in casdoor-tls:
+      # - op: add
+      #   path: /metadata/annotations/cert-manager.io~1cluster-issuer
+      #   value: letsencrypt
+  - target:
+      kind: Ingress
+      name: casdoor-http-redirect
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: auth.example.com

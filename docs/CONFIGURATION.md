@@ -112,6 +112,13 @@ per database, or configure `redisEndpoint` for shared sessions.
 `dbMaxOpenConns` limits the database pool (`20` in the image). Built-in policy
 adapters add at most two connections each.
 
+Behind an HTTPS proxy or Ingress, set `sessionCookieSecure = true` (or the
+environment variable `sessionCookieSecure=true`). Casdoor receives plain HTTP from
+the proxy and otherwise sends its session cookie without `Secure`, so a browser
+could send it over an unencrypted request. The [Kubernetes recipe](../recipes/kubernetes/README.md)
+sets it. Leave it unset when you open Casdoor directly over HTTP, such as
+`http://localhost:19080`, or sign-in stops working.
+
 `initDataNewOnly=true` is the image default and preserves existing records during
 initialization.
 

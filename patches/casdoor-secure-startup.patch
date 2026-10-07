@@ -1,5 +1,5 @@
 diff --git a/main.go b/main.go
-index e30eb86..7484038 100644
+index e30eb86..a52dd55 100644
 --- a/main.go
 +++ b/main.go
 @@ -1,4 +1,5 @@
@@ -40,7 +40,18 @@ index e30eb86..7484038 100644
  	object.InitCleanupTokens()
  	object.InitCleanupRecords()
  	object.InitCleanupDeviceAuthMap()
-@@ -115,7 +134,7 @@ func main() {
+@@ -100,6 +119,10 @@ func main() {
+ 	}
+ 	web.SetStaticPath("/files", "files")
+ 	// https://studygolang.com/articles/2303
++	// behind an HTTPS proxy, mark cookies Secure before any other filter writes a response
++	if conf.GetConfigBool("sessionCookieSecure") {
++		web.InsertFilter("*", web.BeforeStatic, routers.SecureCookieFilter)
++	}
+ 	web.InsertFilter("*", web.BeforeStatic, routers.RequestBodyFilter)
+ 	web.InsertFilter("*", web.BeforeStatic, routers.ContentTypeFilter)
+ 	web.InsertFilter("*", web.BeforeStatic, routers.UploadedFileFilter)
+@@ -115,7 +138,7 @@ func main() {
  
  	var logAdapter string
  	logConfigMap := make(map[string]interface{})
@@ -392,3 +403,162 @@ index f018981..09ff9a1 100644
  		Handler:      radius.HandlerFunc(handlerRadius),
  		SecretSource: radius.StaticSecretSource([]byte(secret)),
  	}
+diff --git a/routers/secure_cookie_filter.go b/routers/secure_cookie_filter.go
+new file mode 100644
+index 0000000..2794b7d
+--- /dev/null
++++ b/routers/secure_cookie_filter.go
+@@ -0,0 +1,88 @@
++// Copyright 2026 The Thesmos integration contributors.
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy at https://www.apache.org/licenses/LICENSE-2.0
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++
++package routers
++
++import (
++	"bufio"
++	"errors"
++	"net"
++	"net/http"
++	"strings"
++
++	"github.com/beego/beego/v2/server/web/context"
++)
++
++// SecureCookieFilter marks every cookie of the response Secure. Enable it with
++// sessionCookieSecure = true when Casdoor is reached through an HTTPS proxy, such as a
++// Kubernetes ingress: Casdoor then receives plain HTTP and would otherwise send its
++// session cookie without Secure, so a browser could send it over an unencrypted request.
++func SecureCookieFilter(ctx *context.Context) {
++	if _, ok := ctx.ResponseWriter.ResponseWriter.(*secureCookieWriter); ok {
++		return
++	}
++	ctx.ResponseWriter.ResponseWriter = &secureCookieWriter{ResponseWriter: ctx.ResponseWriter.ResponseWriter}
++}
++
++// secureCookieWriter adds the Secure attribute to the Set-Cookie headers when the
++// response starts, after the session and handlers have added their cookies.
++type secureCookieWriter struct {
++	http.ResponseWriter
++	started bool
++}
++
++func (w *secureCookieWriter) markCookiesSecure() {
++	if w.started {
++		return
++	}
++	w.started = true
++	cookies := w.Header()["Set-Cookie"]
++	for i, cookie := range cookies {
++		if !hasSecureAttribute(cookie) {
++			cookies[i] = cookie + "; Secure"
++		}
++	}
++}
++
++func hasSecureAttribute(cookie string) bool {
++	parts := strings.Split(cookie, ";")
++	for _, part := range parts[1:] {
++		if strings.EqualFold(strings.TrimSpace(part), "Secure") {
++			return true
++		}
++	}
++	return false
++}
++
++func (w *secureCookieWriter) WriteHeader(code int) {
++	w.markCookiesSecure()
++	w.ResponseWriter.WriteHeader(code)
++}
++
++func (w *secureCookieWriter) Write(data []byte) (int, error) {
++	w.markCookiesSecure()
++	return w.ResponseWriter.Write(data)
++}
++
++func (w *secureCookieWriter) Flush() {
++	w.markCookiesSecure()
++	if flusher, ok := w.ResponseWriter.(http.Flusher); ok {
++		flusher.Flush()
++	}
++}
++
++func (w *secureCookieWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
++	if hijacker, ok := w.ResponseWriter.(http.Hijacker); ok {
++		return hijacker.Hijack()
++	}
++	return nil, nil, errors.New("the response writer does not support hijacking")
++}
++
++func (w *secureCookieWriter) Unwrap() http.ResponseWriter {
++	return w.ResponseWriter
++}
+diff --git a/routers/secure_cookie_filter_test.go b/routers/secure_cookie_filter_test.go
+new file mode 100644
+index 0000000..2dbf2cb
+--- /dev/null
++++ b/routers/secure_cookie_filter_test.go
+@@ -0,0 +1,59 @@
++// Copyright 2026 The Thesmos integration contributors.
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy at https://www.apache.org/licenses/LICENSE-2.0
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++
++package routers
++
++import (
++	"net/http"
++	"net/http/httptest"
++	"testing"
++
++	"github.com/beego/beego/v2/server/web/context"
++)
++
++func TestSecureCookieFilterMarksEveryCookieSecure(t *testing.T) {
++	recorder := httptest.NewRecorder()
++	ctx := context.NewContext()
++	ctx.Reset(recorder, httptest.NewRequest(http.MethodGet, "http://auth.example.com/login", nil))
++
++	SecureCookieFilter(ctx)
++	SecureCookieFilter(ctx) // a second registration must not wrap twice
++
++	// the session manager writes to the original writer's header map
++	http.SetCookie(recorder, &http.Cookie{Name: "casdoor_session_id", Value: "abc", Path: "/", HttpOnly: true})
++	http.SetCookie(ctx.ResponseWriter, &http.Cookie{Name: "already", Value: "x", Secure: true})
++	ctx.ResponseWriter.WriteHeader(http.StatusOK)
++
++	cookies := recorder.Result().Cookies()
++	if len(cookies) != 2 {
++		t.Fatalf("got %d cookies, want 2", len(cookies))
++	}
++	for _, cookie := range cookies {
++		if !cookie.Secure {
++			t.Errorf("cookie %s is not Secure", cookie.Name)
++		}
++	}
++	if got := recorder.Header().Values("Set-Cookie")[1]; got != "already=x; Secure" {
++		t.Errorf("an already Secure cookie changed: %q", got)
++	}
++}
++
++func TestSecureCookieFilterOnWriteWithoutHeader(t *testing.T) {
++	recorder := httptest.NewRecorder()
++	ctx := context.NewContext()
++	ctx.Reset(recorder, httptest.NewRequest(http.MethodGet, "http://auth.example.com/", nil))
++	SecureCookieFilter(ctx)
++
++	http.SetCookie(recorder, &http.Cookie{Name: "casdoor_session_id", Value: "abc"})
++	if _, err := ctx.ResponseWriter.Write([]byte("ok")); err != nil {
++		t.Fatal(err)
++	}
++	if cookies := recorder.Result().Cookies(); len(cookies) != 1 || !cookies[0].Secure {
++		t.Fatalf("session cookie is not Secure: %v", recorder.Header().Values("Set-Cookie"))
++	}
++}
