@@ -30,16 +30,21 @@ The container must resolve and reach the database host; `localhost` inside it
 names the container itself. The configuration and CA must be readable by UID
 1000. Keep credentials private.
 
-## Build and start
+## Start
+
+The recipe runs the published image
+`registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.2`. For production, pin
+its exact digest so the image cannot change under you:
 
 ```sh
-python3 scripts/build-image.py
+export CASDOOR_IMAGE=registry.thesmos.dev/thesmos/casdoor@sha256:fcb88561aa8aa4080fbc18a307e509ee4f1bc3901ddbee5cc56492bb05dce003
 docker compose -f recipes/compose/compose.yaml config --quiet
 docker compose -f recipes/compose/compose.yaml up -d
 ```
 
-Open `http://localhost:19080` and sign in as `admin` in the `built-in`
-organization with the password from `.local/deployment/admin-password`. See
+[Verify the image signature](../../docs/REGISTRY.md#verify-a-published-image)
+before first use. Open `http://localhost:19080` and sign in as `admin` in the
+`built-in` organization with the password from `.local/deployment/admin-password`. See
 [secure startup](../../docs/CONFIGURATION.md#initial-administrator-and-secure-startup).
 This port serves plain HTTP on loopback only; publish Casdoor through the HTTPS
 overlay below.
@@ -73,16 +78,8 @@ Stop the component with:
 docker compose -f recipes/compose/compose.yaml down
 ```
 
-The external database and the storage volumes are kept. To pin the published
-release to its exact digest, set `CASDOOR_IMAGE`:
-
-```sh
-export CASDOOR_IMAGE=registry.thesmos.dev/thesmos/casdoor@sha256:RELEASE_DIGEST
-```
-
-`CASDOOR_PORT` changes the host port; update the configured origin to
-match. Without `CASDOOR_IMAGE`, the recipe uses the `v4.15.0-thesmos.2` release tag;
-for a local build, set `CASDOOR_IMAGE=casdoor-integration:candidate`.
+The external database and the storage volumes are kept. `CASDOOR_PORT` changes
+the host port; update the configured origin to match.
 
 ## Configuration and storage
 
@@ -111,3 +108,16 @@ which defaults to 100.
 A shared PostgreSQL server can reduce infrastructure cost using separate databases
 and roles. Give the Casdoor role no access to the Thesmos database. Database sharing
 does not merge application tables or provision users automatically.
+
+## Use your own build
+
+To run an image built from this repository instead of the published one, build
+it, then point the recipe at the local tag:
+
+```sh
+python3 scripts/build-image.py
+export CASDOOR_IMAGE=casdoor-integration:candidate
+docker compose -f recipes/compose/compose.yaml up -d
+```
+
+Building needs Git, Python 3, an authenticated GitHub CLI and Docker with Buildx.

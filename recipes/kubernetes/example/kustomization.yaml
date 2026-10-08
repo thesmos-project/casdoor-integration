@@ -17,7 +17,7 @@ secretGenerator:
 images:
   # Pin the release digest from docs/REGISTRY.md.
   - name: registry.thesmos.dev/thesmos/casdoor
-    digest: sha256:RELEASE_DIGEST
+    digest: sha256:fcb88561aa8aa4080fbc18a307e509ee4f1bc3901ddbee5cc56492bb05dce003
 patches:
   - target:
       kind: Ingress

@@ -31,8 +31,9 @@ redirect and header settings. Casdoor marks its cookies `Secure` itself
    In `app.conf`, set `dataSourceName` to your database and keep
    `sslmode=verify-full`. Set `origin` and `originFrontend` to your public
    HTTPS address, such as `https://auth.example.com`.
-3. In `kustomization.yaml`, replace `auth.example.com` with your host name and
-   `RELEASE_DIGEST` with the digest from the [registry guide](../../docs/REGISTRY.md).
+3. In `kustomization.yaml`, replace `auth.example.com` with your host name. The
+   image is already pinned to the current release digest; update it when you
+   upgrade, using the [registry guide](../../docs/REGISTRY.md).
 4. Provide the certificate in the `casdoor-tls` Secret: enable the cert-manager
    annotation in `kustomization.yaml`, or create the Secret yourself:
 

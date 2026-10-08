@@ -61,27 +61,32 @@ Current release: **`v4.15.0-thesmos.2`**, based on Casdoor **`v4.15.0`**,
 targeting **`linux/amd64`**. The signed image is published at:
 
 ```text
-registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.2
+registry.thesmos.dev/thesmos/casdoor@sha256:fcb88561aa8aa4080fbc18a307e509ee4f1bc3901ddbee5cc56492bb05dce003
 ```
 
-Pin the digest shown in the [registry guide](docs/REGISTRY.md) for repeatable deployments.
-[Verify its signature and SBOM](docs/REGISTRY.md#verify-a-published-image) before use.
+The tag `v4.15.0-thesmos.2` refers to the same image; deploy by digest so the image
+cannot change. [Verify its signature and SBOM](docs/REGISTRY.md#verify-a-published-image)
+before use, then follow the [Compose recipe](recipes/compose/README.md) or the
+[Kubernetes recipe](recipes/kubernetes/README.md). Both use this image; you do not
+need to build anything.
 
 Read the [release notes and upgrade considerations](docs/RELEASE-STATUS.md)
 before deploying, and use the [HTTPS setup](recipes/compose/README.md#serve-https) or the [Kubernetes recipe](recipes/kubernetes/README.md) for production. On a new database the image requires an initial administrator password file;
 see [secure startup](docs/CONFIGURATION.md#initial-administrator-and-secure-startup).
 
-To build the image yourself, you need Git, Python 3, an authenticated GitHub CLI and Docker with Buildx:
+A single PostgreSQL server can host Casdoor and Thesmos using separate databases
+and restricted roles.
+
+To check or change the patches, you can build the same image from this repository
+with Git, Python 3, an authenticated GitHub CLI and Docker with Buildx:
 
 ```sh
 python3 scripts/validate-project.py
 python3 scripts/build-image.py
 ```
 
-The output is `casdoor-integration:candidate`. Follow the
-[Compose setup instructions](recipes/compose/README.md) or the [Kubernetes recipe](recipes/kubernetes/README.md) to configure PostgreSQL and start
-Casdoor. A single PostgreSQL server can host both applications using separate
-databases and restricted roles.
+The local image is `casdoor-integration:candidate`; see
+[use your own build](recipes/compose/README.md#use-your-own-build).
 
 ## Documentation
 

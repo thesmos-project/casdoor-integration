@@ -6,7 +6,7 @@
 | Source | Casdoor `v4.15.0` plus the [eight published patches](PATCHES.md) |
 | Platform | `linux/amd64` |
 | Deployment | Compose recipe with an optional Caddy HTTPS overlay; Kubernetes recipe with a k3s overlay |
-| Image | Signed release `registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.2` |
+| Image | Signed release `registry.thesmos.dev/thesmos/casdoor@sha256:fcb88561aa8aa4080fbc18a307e509ee4f1bc3901ddbee5cc56492bb05dce003` (tag `v4.15.0-thesmos.2`) |
 
 The [README](../README.md) describes the available capabilities. The
 [validation summary](VALIDATION.md) explains what automated checks cover.
