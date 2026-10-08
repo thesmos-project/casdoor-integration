@@ -11,7 +11,8 @@
 ## v4.15.0-thesmos.2
 
 - **Kubernetes recipe.** Manifests for any cluster, an overlay for k3s with
-  Traefik, and an automated test on k3s.
+  Traefik, Let's Encrypt certificates renewed automatically by cert-manager, and
+  an automated test on k3s.
 - **`sessionCookieSecure` option.** Casdoor marks its cookies `Secure` behind an
   HTTPS proxy or Ingress. The Kubernetes recipe and the Compose HTTPS overlay set
   it. See [server configuration](CONFIGURATION.md#server-configuration-and-persistence).

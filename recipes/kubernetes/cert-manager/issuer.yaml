@@ -1,0 +1,18 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: casdoor-letsencrypt
+spec:
+  acme:
+    # To try the setup without Let's Encrypt rate limits, use the staging server:
+    # https://acme-staging-v02.api.letsencrypt.org/directory
+    server: https://acme-v02.api.letsencrypt.org/directory
+    # Let's Encrypt sends expiry warnings to this address.
+    email: admin@example.com
+    privateKeySecretRef:
+      name: casdoor-letsencrypt-account
+    solvers:
+      # Let's Encrypt checks the domain over HTTP on port 80, through Traefik.
+      - http01:
+          ingress:
+            ingressClassName: traefik

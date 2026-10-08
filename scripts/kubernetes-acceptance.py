@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Kubernetes recipe acceptance: recipes/kubernetes/k3s on a disposable k3s cluster.
 
-Creates a k3d cluster, PostgreSQL with verified TLS, and a deployment overlay like
-recipes/kubernetes/example with a local certificate authority. Checks the pod's
+Creates a k3d cluster with cert-manager, PostgreSQL with verified TLS, and a
+deployment overlay like recipes/kubernetes/example, whose cert-manager issuer is
+replaced by a local certificate authority. Checks certificate issuance, the pod's
 security settings, HTTPS redirection, HSTS, the OIDC issuer, Secure session
 cookies, rejection of a forged forwarding header, the network policy, and
 persistence of uploaded files and sessions across a restart. Set K3D and KUBECTL
 to the tool paths when they are not on PATH. The report contains no secrets.
 """
 import argparse
+import hashlib
 import http.client
 import json
 import os
@@ -18,6 +20,7 @@ import shutil
 import socket
 import ssl
 import time
+import urllib.request
 import uuid
 
 from acceptance_fixture import ROOT, RecipeFixture, run
@@ -25,6 +28,8 @@ from acceptance_fixture import ROOT, RecipeFixture, run
 # rancher/k3s:v1.37.1-k3s1
 K3S_IMAGE = "rancher/k3s@sha256:ca7f37d993d82ef0dcdcfecb2e0e2618ea541dbaffc620c8cedebe01a82acd0d"
 RELEASE_IMAGE = "registry.thesmos.dev/thesmos/casdoor"
+CERT_MANAGER_URL = "https://github.com/cert-manager/cert-manager/releases/download/v1.21.2/cert-manager.yaml"
+CERT_MANAGER_SHA256 = "e03b668ec8675214af6b0a671699d088f2601fa3878e0dbe1b41d3feafd1879f"
 
 
 def free_port():
@@ -94,6 +99,14 @@ def main():
         else:
             raise RuntimeError("Traefik did not install its resources")
 
+        with urllib.request.urlopen(CERT_MANAGER_URL, timeout=60) as response:
+            manifest = response.read()
+        if hashlib.sha256(manifest).hexdigest() != CERT_MANAGER_SHA256:
+            raise RuntimeError("cert-manager manifest checksum mismatch")
+        (fixture.work / "cert-manager.yaml").write_bytes(manifest)
+        kube("apply", "-f", str(fixture.work / "cert-manager.yaml"))
+        kube("-n", "cert-manager", "wait", "--for=condition=Available", "deployment", "--all", "--timeout=300s")
+
         # The overlay a deployment writes: secrets, host name, image and, for this test,
         # a Service that resolves the database's TLS name to its container.
         overlay = fixture.work / "overlay"
@@ -103,12 +116,8 @@ def main():
         c = fixture.certs
         run("openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "2", "-subj", "/CN=ingress-ca",
             "-keyout", str(c / "ingress-ca.key"), "-out", str(c / "ingress-ca.pem"))
-        run("openssl", "req", "-newkey", "rsa:2048", "-nodes", "-subj", "/CN=localhost",
-            "-keyout", str(overlay / "tls.key"), "-out", str(c / "ingress.csr"))
-        (c / "ingress.ext").write_text("subjectAltName=DNS:localhost\n")
-        run("openssl", "x509", "-req", "-in", str(c / "ingress.csr"), "-CA", str(c / "ingress-ca.pem"),
-            "-CAkey", str(c / "ingress-ca.key"), "-CAcreateserial", "-days", "2", "-extfile", str(c / "ingress.ext"),
-            "-out", str(overlay / "tls.crt"))
+        for name in ["ingress-ca.pem", "ingress-ca.key"]:
+            shutil.copyfile(c / name, overlay / name)
         database_ip = run("docker", "inspect", "-f", "{{(index .NetworkSettings.Networks \"" + fixture.network + "\").IPAddress}}",
                           fixture.database).stdout.strip()
         (overlay / "database.yaml").write_text(json.dumps({"apiVersion": "v1", "kind": "List", "items": [
@@ -122,15 +131,19 @@ def main():
         (overlay / "kustomization.yaml").write_text(json.dumps({
             "apiVersion": "kustomize.config.k8s.io/v1beta1", "kind": "Kustomization", "namespace": "casdoor",
             "resources": [os.path.relpath(ROOT / "recipes/kubernetes/k3s", overlay), "database.yaml"],
+            "components": [os.path.relpath(ROOT / "recipes/kubernetes/cert-manager", overlay)],
             "secretGenerator": [
                 {"name": "casdoor-config", "files": ["app.conf", "admin-password", "db-ca.pem"]},
-                {"name": "casdoor-tls", "type": "kubernetes.io/tls", "files": ["tls.crt", "tls.key"],
+                {"name": "test-ca", "type": "kubernetes.io/tls", "files": ["tls.crt=ingress-ca.pem", "tls.key=ingress-ca.key"],
                  "options": {"disableNameSuffixHash": True}}],
             "images": [image_override(options.image)],
             "patches": [
                 {"target": {"kind": "Ingress", "name": "casdoor"}, "patch": json.dumps(
                     host_patch + [{"op": "replace", "path": "/spec/tls/0/hosts/0", "value": "localhost"}])},
-                {"target": {"kind": "Ingress", "name": "casdoor-http-redirect"}, "patch": json.dumps(host_patch)}]}))
+                {"target": {"kind": "Ingress", "name": "casdoor-http-redirect"}, "patch": json.dumps(host_patch)},
+                # Let's Encrypt cannot reach a test cluster; a local authority issues instead.
+                {"target": {"kind": "Issuer", "name": "casdoor-letsencrypt"}, "patch": json.dumps(
+                    [{"op": "replace", "path": "/spec", "value": {"ca": {"secretName": "test-ca"}}}])}]}))
         kube("apply", "-k", str(overlay))
         if kube("-n", "casdoor", "rollout", "status", "deployment/casdoor", "--timeout=300s", check=False).returncode != 0:
             raise RuntimeError("Casdoor did not become ready: " + kube("-n", "casdoor", "logs", "deployment/casdoor", "--tail=20", check=False).stdout[-800:])
@@ -155,6 +168,8 @@ def main():
                 time.sleep(1)
             raise RuntimeError("Casdoor is not reachable through the Ingress")
 
+        issued = kube("-n", "casdoor", "wait", "--for=condition=Ready", "certificate/casdoor-tls", "--timeout=180s", check=False)
+        check("cert-manager issues the Ingress certificate", issued.returncode == 0, issued.stderr[-300:])
         wait_ready()
         pod = json.loads(kube("-n", "casdoor", "get", "pods", "-l", "app.kubernetes.io/name=casdoor", "-o", "json").stdout)["items"][0]
         identity = kube("-n", "casdoor", "exec", pod["metadata"]["name"], "--", "sh", "-c",

@@ -1,0 +1,18 @@
+# Optional: cert-manager obtains the casdoor-tls certificate from Let's Encrypt
+# and renews it before it expires. Requires cert-manager in the cluster; see
+# ../README.md#https-certificates.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+  - issuer.yaml
+patches:
+  - target:
+      kind: Ingress
+      name: casdoor
+    patch: |-
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: casdoor
+        annotations:
+          cert-manager.io/issuer: casdoor-letsencrypt
