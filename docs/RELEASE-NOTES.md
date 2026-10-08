@@ -63,9 +63,11 @@ deployment before you switch.
   of users and groups, and prevent update loops.
 - Application-specific JWKS publishes only the current signing key, and SAML
   certificates have no rollover.
-- Both recipes run one Casdoor instance. Several instances need `redisEndpoint`
-  for sessions and object storage for uploads; see
+- Run one Casdoor instance per database. Casdoor keeps captchas, firewall rules
+  and syncer schedules in each process, so a second instance causes failed
+  captchas, stale rules and duplicate imports; see
   [storage and scaling](../recipes/kubernetes/README.md#storage-and-scaling).
+  Scale with the CPU limit.
 - [Measured capacity](VALIDATION.md#measured-capacity) applies to the recipe
   limits on the test host; raise the CPU limit for higher sign-in rates.
 - Thesmos Enterprise features need that edition and its licence; this repository

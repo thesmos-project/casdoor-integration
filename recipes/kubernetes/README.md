@@ -95,10 +95,17 @@ from `/files`, and `casdoor-sessions` for sign-in sessions. They use the
 cluster's default storage class with `ReadWriteOnce` access, so the Deployment
 runs one instance and replaces it on update (`Recreate`).
 
-To run several instances, set `redisEndpoint` in `app.conf` for shared
-sessions, store uploads with an object storage provider such as S3, remove the
-two volumes, and raise `replicas`. Size `cpus` for the sign-in rate you expect;
-see [measured capacity](../../docs/VALIDATION.md#measured-capacity).
+Keep one instance per database. Casdoor keeps some state in each process:
+captchas from its built-in captcha provider, the cached firewall rules, and the
+schedules of syncers and LDAP auto-sync. With two instances, a captcha can fail
+on the other instance, a rule change applies only where it was saved, and every
+scheduled import runs twice. Shared sessions in Redis do not remove these
+effects.
+
+To handle more sign-ins, raise the CPU limit: password sign-in is bounded by
+bcrypt, at about 15 per second with one CPU; see
+[measured capacity](../../docs/VALIDATION.md#measured-capacity). A restart or
+update takes Casdoor offline for a few seconds while the new pod starts.
 
 ## Network policy
 

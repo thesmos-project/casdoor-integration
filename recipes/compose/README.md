@@ -94,8 +94,8 @@ managed through Casdoor's UI/API and persist in PostgreSQL. See
 
 `initDataNewOnly=true` avoids replacing existing records.
 
-Sessions are files in one container, so run a single Casdoor instance per
-database. Within the recipe's 384 MiB and one-CPU limits, the
+Run a single Casdoor instance per database; see
+[storage and scaling](../kubernetes/README.md#storage-and-scaling). Within the recipe's 384 MiB and one-CPU limits, the
 [capacity test](../../docs/VALIDATION.md#measured-capacity) ran without errors at
 about 15 password sign-ins, 50 token issues and 150 introspections per second,
 peaking at 73 MiB. Password sign-in is bounded by bcrypt; raise `cpus` for higher

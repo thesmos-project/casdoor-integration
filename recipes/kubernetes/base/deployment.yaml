@@ -3,8 +3,8 @@ kind: Deployment
 metadata:
   name: casdoor
 spec:
-  # One instance: sessions are files on the casdoor-sessions volume. Running more
-  # instances needs redisEndpoint and shared storage; see ../README.md.
+  # One instance per database: Casdoor keeps captchas, firewall rules and syncer
+  # schedules in each process. Scale with the CPU limit; see ../README.md.
   replicas: 1
   strategy:
     type: Recreate

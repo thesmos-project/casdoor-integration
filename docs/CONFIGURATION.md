@@ -103,8 +103,8 @@ A shared PostgreSQL server can host both applications with separate databases
 and roles; the Casdoor role should have no access to the Thesmos database.
 To store uploads locally, add a storage provider of type `Local File System` with
 its domain set to the public origin; files are served from `/files`. An object
-storage provider works too. Casdoor keeps sessions as files, so run one instance
-per database, or configure `redisEndpoint` for shared sessions.
+storage provider works too. Run one Casdoor instance per database; see
+[storage and scaling](../recipes/kubernetes/README.md#storage-and-scaling).
 
 `dbMaxOpenConns` limits the database pool (`20` in the image). Built-in policy
 adapters add at most two connections each.
