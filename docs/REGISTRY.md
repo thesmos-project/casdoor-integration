@@ -1,8 +1,8 @@
-# Registry publishing and image verification
+# Verify or publish an image
 
-The current release is `registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.2`.
-This guide describes how to verify it and how maintainers publish new versions.
-Local builds do not require registry credentials.
+The first section shows how to check that an image comes from this repository's
+publishing workflow. The rest is for maintainers who publish new versions.
+Building locally needs no registry account.
 
 ## Verify a published image
 
@@ -31,7 +31,7 @@ cosign verify-attestation --type spdxjson \
 A verified signature identifies the publishing workflow. Check the source
 revision and release channel as well: release candidates (`-rc.N`) are
 pre-release builds, and stable versions have no suffix. See the
-[release notes](RELEASE-STATUS.md).
+[release notes](RELEASE-NOTES.md).
 
 ## Maintainer settings
 

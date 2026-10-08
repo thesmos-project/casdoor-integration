@@ -1,84 +1,94 @@
 # Casdoor integration build
 
-A patched Casdoor build for OIDC/SAML sign-in, SCIM user/group provisioning
-and configurable JWT claims. This repository supplies the patches, image builder
-and Compose and Kubernetes recipes.
+A patched build of [Casdoor](https://github.com/casdoor/casdoor) `v4.15.0` for
+OIDC and SAML sign-in, SCIM provisioning of users and groups, and structured JWT
+claims. This repository contains the patches, the image builder, and Compose and
+Kubernetes recipes.
 
-Casdoor is developed by the [Casdoor project and its contributors](https://github.com/casdoor/casdoor).
-Thesmos maintains these integration changes independently. The original authorship,
-licences and notices are preserved.
+Thesmos maintains this build. Casdoor is developed by the Casdoor project and its
+contributors; their authorship, licences and notices are kept.
 
-## Who benefits from these patches
+## Deploy
 
-Applications and provisioners that use Casdoor's OIDC, SAML or SCIM interfaces
-can benefit from these changes: reliable SCIM lookups and account updates,
-stable SAML identity, structured JWT claims and stricter token/client checks.
-These behaviors use standard Casdoor configuration and protocol endpoints.
+The current release is `v4.15.0-thesmos.2` for `linux/amd64`:
 
-Thesmos is the integration example used here. To use another application,
-configure its client, redirect URI, SAML settings or SCIM mappings as appropriate.
-The patches and builder are available for reuse under their published licences.
+```text
+registry.thesmos.dev/thesmos/casdoor@sha256:fcb88561aa8aa4080fbc18a307e509ee4f1bc3901ddbee5cc56492bb05dce003
+```
 
-## Thesmos integration examples
+The tag `v4.15.0-thesmos.2` points to the same image. Deploy by digest so the
+image cannot change under you.
 
-| Your task | What the integration provides |
+1. [Verify the image signature and SBOM](docs/REGISTRY.md#verify-a-published-image).
+2. Choose a recipe: [Compose](recipes/compose/README.md) for one server, or
+   [Kubernetes](recipes/kubernetes/README.md) for a cluster. Both run this image
+   against your PostgreSQL database.
+3. Create the initial administrator password file before the first start;
+   Casdoor refuses to start without it. See
+   [secure startup](docs/CONFIGURATION.md#initial-administrator-and-secure-startup).
+4. Before an upgrade, read the [release notes](docs/RELEASE-NOTES.md).
+
+You do not need to build anything. One PostgreSQL server can host Casdoor and
+Thesmos in separate databases with restricted roles.
+
+## What this build changes
+
+| Area | Change |
 | --- | --- |
-| Sign in to Thesmos Community | Casdoor OIDC, with stricter redirect and application checks when exchanging or inspecting tokens. |
-| Sign in to Thesmos Enterprise | Casdoor SAML, with an optional stable user ID for account linking. |
-| Provision users and groups from Thesmos Enterprise into Casdoor | Casdoor's SCIM API receives the provisioning requests. Our patches improve lookups, pagination, group identifiers and user deactivation. |
-| Provision a Thesmos Enterprise directory from Casdoor | A SCIM provisioner reads Casdoor's users/groups and writes them to Thesmos. Our SCIM response and stable SAML identity changes support this flow. |
-| Set application authorization claims | Administrator-configured JWT fields and typed JSON values, validated before saving. |
-| Customize the login experience | Casdoor's organization/application theme and branding settings, saved in its database. |
-| Run Casdoor alongside Thesmos | A rebuilt container with Compose and Kubernetes (k3s) recipes, PostgreSQL configuration and runtime limits. |
+| SCIM | Lookups by `userName`, `externalId` and `displayName`; correct totals and paging; group `externalId` kept; accounts disabled through `active`; a `PUT` keeps Casdoor-only account state. |
+| SAML | An optional persistent NameID based on the user ID, so an email or username change keeps the account link. |
+| JWT | Claims with JSON values (objects, arrays, booleans), validated when the application is saved. |
+| Tokens | The redirect URI must match exactly; a token is active only for the client it was issued to; previous signing keys can stay valid during a rotation. |
+| Startup | No default administrator password; unsafe settings are refused; the database connection pool is limited; cookies are marked `Secure` behind an HTTPS proxy. |
+| Security | Redirect URIs no longer match subdomains; database syncers verify the SSH server key; dependencies are updated. |
 
-## How SCIM provisioning works
+[The patches page](docs/PATCHES.md) explains why each change exists. Themes,
+OIDC, SAML and SCIM come from Casdoor and are configured in its administrator UI
+or API.
 
-The provisioner sends changes to the destination's SCIM API:
+These changes use standard Casdoor settings and protocol endpoints, so any OIDC,
+SAML or SCIM application benefits. Configure its client, redirect URI, SAML
+settings or SCIM mappings in Casdoor.
+
+## Use it with Thesmos
+
+| Task | How |
+| --- | --- |
+| Sign in to Thesmos Community | Casdoor OIDC. |
+| Sign in to Thesmos Enterprise | Casdoor SAML, optionally with the persistent NameID for stable account links. |
+| Send Thesmos Enterprise users and groups to Casdoor | A SCIM provisioner writes to Casdoor's SCIM API. |
+| Send Casdoor users and groups to Thesmos Enterprise | A SCIM provisioner reads Casdoor's SCIM API and writes to Thesmos. |
+| Give applications authorization data | JWT claims configured on the Casdoor application. |
+| Brand the sign-in page | Casdoor's organization and application themes. |
+
+A SCIM provisioner is a separate component that copies changes from one
+directory's SCIM API to the other:
 
 ```mermaid
 flowchart LR
   T[Thesmos directory] --> P[SCIM provisioner] --> C[Casdoor SCIM API]
 ```
 
-For the reverse direction, the provisioner reads Casdoor and writes to Thesmos.
-Choose the authoritative directory for each set of users and groups. The Casdoor
-image provides the Casdoor API; configure the provisioner as a separate component.
-See [SCIM configuration and request example](docs/CONFIGURATION.md#scim-provisioning).
+Choose which directory is authoritative for each set of users and groups. See
+[SCIM provisioning](docs/CONFIGURATION.md#scim-provisioning).
 
-## What we changed in Casdoor
+## Documentation
 
-The main changes address identity synchronization, stable SAML account linking,
-typed JWT claims and token/client validation. We also update dependencies and
-retain their distribution notices and sources. Each change is explained in
-[why the patches exist](docs/PATCHES.md).
+- [Deploy with Compose or Kubernetes](recipes/README.md)
+- [Configure SCIM, JWT claims, SAML, themes and startup](docs/CONFIGURATION.md)
+- [Release notes and limits](docs/RELEASE-NOTES.md)
+- [Why each patch exists](docs/PATCHES.md)
+- [Automated tests](docs/VALIDATION.md)
+- [Security review](docs/SECURITY-REVIEW.md)
+- [Verify or publish an image](docs/REGISTRY.md)
+- [Image sources and licences](docs/DISTRIBUTION.md)
+- [Maintain and release this build](MAINTENANCE.md)
+- [Report a security issue](SECURITY.md)
 
-Themes, OIDC, SAML and the underlying SCIM API come from Casdoor. The integration
-build keeps these features configurable through Casdoor's administrator UI/API.
+## Build the image yourself
 
-## Use the current release
-
-Current release: **`v4.15.0-thesmos.2`**, based on Casdoor **`v4.15.0`**,
-targeting **`linux/amd64`**. The signed image is published at:
-
-```text
-registry.thesmos.dev/thesmos/casdoor@sha256:fcb88561aa8aa4080fbc18a307e509ee4f1bc3901ddbee5cc56492bb05dce003
-```
-
-The tag `v4.15.0-thesmos.2` refers to the same image; deploy by digest so the image
-cannot change. [Verify its signature and SBOM](docs/REGISTRY.md#verify-a-published-image)
-before use, then follow the [Compose recipe](recipes/compose/README.md) or the
-[Kubernetes recipe](recipes/kubernetes/README.md). Both use this image; you do not
-need to build anything.
-
-Read the [release notes and upgrade considerations](docs/RELEASE-STATUS.md)
-before deploying, and use the [HTTPS setup](recipes/compose/README.md#serve-https) or the [Kubernetes recipe](recipes/kubernetes/README.md) for production. On a new database the image requires an initial administrator password file;
-see [secure startup](docs/CONFIGURATION.md#initial-administrator-and-secure-startup).
-
-A single PostgreSQL server can host Casdoor and Thesmos using separate databases
-and restricted roles.
-
-To check or change the patches, you can build the same image from this repository
-with Git, Python 3, an authenticated GitHub CLI and Docker with Buildx:
+To check or change the patches, build the same image from this repository. You
+need Git, Python 3, an authenticated GitHub CLI and Docker with Buildx:
 
 ```sh
 python3 scripts/validate-project.py
@@ -88,24 +98,10 @@ python3 scripts/build-image.py
 The local image is `casdoor-integration:candidate`; see
 [use your own build](recipes/compose/README.md#use-your-own-build).
 
-## Documentation
-
-- [Deploy with Compose or Kubernetes](recipes/README.md)
-- [Configure themes, JWT claims, SAML and SCIM](docs/CONFIGURATION.md)
-- [Understand the patches](docs/PATCHES.md)
-- [Read the release notes and limits](docs/RELEASE-STATUS.md)
-- [See validation coverage](docs/VALIDATION.md)
-- [Read the security review](docs/SECURITY-REVIEW.md)
-- [Read image source and licence information](docs/DISTRIBUTION.md)
-- [Maintain or release the integration](MAINTENANCE.md)
-- [Publish and verify an image](docs/REGISTRY.md)
-- [Report a security issue](SECURITY.md)
-
 ## Licence and contributions
 
-Original integration material is licensed under [Apache License 2.0](LICENSE).
-You may use, modify and redistribute it under that licence. Casdoor and all
-other dependencies retain their own copyrights, licences and applicable notices;
-see [NOTICE](NOTICE) and [distribution contents](docs/DISTRIBUTION.md).
-Contributions are welcome here. Upstream submissions require a manual maintainer
-decision.
+The material in this repository is licensed under the [Apache License 2.0](LICENSE).
+Casdoor and every other dependency keep their own copyrights, licences and
+notices; see [NOTICE](NOTICE) and [image sources and licences](docs/DISTRIBUTION.md).
+Contributions are welcome here. Changes are offered to the Casdoor project only
+by a maintainer's decision.

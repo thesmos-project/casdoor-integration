@@ -1,9 +1,9 @@
 # Compose recipe
 
-This recipe runs one Casdoor instance against an existing PostgreSQL database.
-On its own it serves `http://localhost:19080` on loopback; with the HTTPS overlay
-it serves a public host name through a Caddy reverse proxy. It starts Casdoor
-only; run Thesmos separately. For a cluster, use the
+This recipe runs one Casdoor instance on one server, against an existing
+PostgreSQL database. On its own it serves `http://localhost:19080`, reachable
+only from that server; with the HTTPS overlay it serves a public host name
+through a Caddy proxy. It starts Casdoor only; run Thesmos separately. For a cluster, use the
 [Kubernetes recipe](../kubernetes/README.md).
 
 ## Prepare configuration
@@ -60,9 +60,10 @@ export CASDOOR_DOMAIN=auth.example.com
 docker compose -f recipes/compose/compose.yaml -f recipes/compose/compose.https.yaml up -d
 ```
 
-Caddy obtains and renews the certificate, redirects HTTP to HTTPS, sends HSTS
-and marks Casdoor's session cookie `Secure`; Casdoor sees plain HTTP behind the
-proxy and cannot set that attribute itself. Only Caddy publishes public ports.
+Caddy obtains and renews the certificate, redirects HTTP to HTTPS and sends
+HSTS. The overlay sets `sessionCookieSecure`, so Casdoor marks its cookies
+`Secure` although it receives plain HTTP from Caddy. Only Caddy publishes public
+ports.
 Casdoor trusts `X-Forwarded-For` only from loopback and private addresses, which
 here means the proxy; set `trustedProxies` if your network differs.
 `CASDOOR_HTTP_PORT` and `CASDOOR_HTTPS_PORT` change the published ports.
@@ -72,7 +73,7 @@ Caddy's local authority for `localhost`.
 `scripts/recipe-acceptance.py` runs this recipe end to end against a disposable
 PostgreSQL database with verified TLS, then removes everything it created.
 
-Stop the component with:
+Stop Casdoor with:
 
 ```sh
 docker compose -f recipes/compose/compose.yaml down

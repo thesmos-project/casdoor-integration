@@ -2,6 +2,10 @@
 #   CASDOOR_DOMAIN=auth.example.com docker compose -f recipes/compose/compose.yaml -f recipes/compose/compose.https.yaml up -d
 # Set origin and originFrontend in app.conf to https://$CASDOOR_DOMAIN.
 services:
+  casdoor:
+    environment:
+      # Caddy terminates HTTPS; Casdoor marks its cookies Secure itself.
+      sessionCookieSecure: "true"
   proxy:
     image: caddy@sha256:881bbc60f9986d5ab8e7cfd6cf7e4ef3c9c0439fef2429d035d065577882f028
     depends_on: [casdoor]

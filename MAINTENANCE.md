@@ -26,7 +26,7 @@ where applicable, coordinated disclosure.
 
 ## Release procedure
 
-1. Update source/build locks, patch documentation and version limitations.
+1. Update source/build locks, the [patches page](docs/PATCHES.md) and the [release notes](docs/RELEASE-NOTES.md).
 2. Build and run the relevant checks. Review source provenance, dependency
    notices and sources, and the runtime reports.
 3. Record the selected channel's acceptance in `release-policy.json`, including
@@ -57,7 +57,7 @@ where applicable, coordinated disclosure.
 
 RC versions use the candidate channel and retain production approval `false`.
 Stable versions have no RC suffix and require full production acceptance.
-[The release status](docs/RELEASE-STATUS.md) describes the current version's limits.
+The [release notes](docs/RELEASE-NOTES.md) describe each version's changes and limits.
 
 ## Configuration and contributions
 

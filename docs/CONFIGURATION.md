@@ -1,19 +1,18 @@
-# Configure this version
+# Configuration
 
-The container runs Casdoor with its administrator UI/API. Organization and
-application settings are stored in the configured database; server configuration
-is supplied at deployment. See the [Compose recipe](../recipes/compose/README.md)
-for the required PostgreSQL configuration and [release limitations](RELEASE-STATUS.md)
-before exposing any endpoint.
+Casdoor keeps organization and application settings in its database; you change
+them in the administrator UI or API. Server settings come from `app.conf`, which
+you supply when you deploy; the [recipes](../recipes/README.md) show how.
 
-The same Casdoor settings apply when integrating another application. Configure
+The examples use Thesmos. Another application uses the same Casdoor settings:
 its client credentials, redirect URI, SAML service-provider settings or SCIM
-mappings. The Thesmos examples below describe one integration of these interfaces.
+mappings.
 
 ## SCIM provisioning
 
-The Thesmos directory SCIM API requires Enterprise. Use a SCIM provisioner
-to transfer directory changes between the two applications.
+The Thesmos directory SCIM API requires Thesmos Enterprise. A SCIM provisioner,
+run as a separate component, copies directory changes between the two
+applications.
 
 ### Send Thesmos users and groups to Casdoor
 
@@ -39,12 +38,12 @@ Content-Type: application/scim+json
 }
 ```
 
-The active-state patch applies that boolean to Casdoor's forbidden-user state.
-A full replacement (`PUT`) updates the attributes SCIM maps and retains
-Casdoor-only account state; include `active` to change whether the account is
-enabled.
-The group identifier patch retains the source's `externalId`. The lookup and
-pagination patches help the provisioner locate and reconcile existing records.
+Setting `active` to `false` disables the account; `true` enables it again. A
+full replacement (`PUT`) updates the attributes SCIM maps and keeps Casdoor-only
+account state, such as MFA and administrator status; include `active` to change
+whether the account is enabled. Groups keep the `externalId` the provisioner
+sends, and [lookup fields](#lookup-fields) let it find existing records before it
+creates new ones.
 
 ### Send Casdoor users and groups to Thesmos
 
@@ -53,8 +52,6 @@ Thesmos's SCIM API. Choose an authoritative directory for each user/group scope.
 If both directions run, use distinct ownership scopes and define how conflicting
 changes are handled.
 
-The provisioner runs as a separate component. The Casdoor image supplies the
-Casdoor SCIM endpoints for both receiving writes and serving reads.
 
 ### Lookup fields
 
@@ -73,10 +70,10 @@ CREATE INDEX group_lower_display_name ON "group" (LOWER(display_name));
 
 ### Import remote users with Casdoor's syncer
 
-Casdoor also has a built-in SCIM user import syncer. Configure a remote SCIM
-server and mappings to fetch its Users into Casdoor. The request-lifetime patch
-allows the HTTP requests to complete under the client's 30-second timeout.
-See [version limitations](RELEASE-STATUS.md) for its supported operations.
+Casdoor also has a built-in SCIM syncer that imports users from a remote SCIM
+server. Configure the server and attribute mappings on the syncer. Each request
+to the remote server has a 30-second timeout. The syncer imports users only;
+see [limits](RELEASE-NOTES.md#limits).
 
 ### Database syncers through an SSH tunnel
 
@@ -95,11 +92,11 @@ Check the scanned key against the server itself, such as
 
 ## Server configuration and persistence
 
-Mount a readable file at `/conf/app.conf`. The container refuses to start without
-it and runs as UID/GID `1000:1000`. The recipe mounts `/conf` read-only, keeps
-sessions in a volume at `/tmp` and uploaded files in a volume at `/files`.
-Casdoor's supported environment configuration overrides remain available, such as
-`initDataNewOnly`, `logConfig` and `dbMaxOpenConns`.
+Mount a readable file at `/conf/app.conf`; the container refuses to start without
+it. Casdoor runs as UID/GID `1000:1000`. The recipes mount `/conf` read-only, keep
+sessions in a volume at `/tmp` and uploaded files in a volume at `/files`. An
+environment variable with the same name overrides an `app.conf` setting, for
+example `initDataNewOnly`, `logConfig` or `dbMaxOpenConns`.
 
 Use a persistent database for users, clients, providers and theme configuration.
 A shared PostgreSQL server can host both applications with separate databases
@@ -119,8 +116,9 @@ could send it over an unencrypted request. The [Kubernetes recipe](../recipes/ku
 sets it. Leave it unset when you open Casdoor directly over HTTP, such as
 `http://localhost:19080`, or sign-in stops working.
 
-`initDataNewOnly=true` is the image default and preserves existing records during
-initialization.
+`initDataNewOnly=true` is the image default: an initialization file only adds
+records that do not exist yet. With `false`, Casdoor replaces the users and
+certificates the file defines on every restart.
 
 ## Initial administrator and secure startup
 
@@ -140,7 +138,8 @@ at least 16 characters without surrounding whitespace. Sign in as `admin` in the
 `built-in` organization with it, then enable MFA for the account. Casdoor uses
 the file only while the password is a default, so changing the password in the
 UI, or rotating the file, never resets the administrator's current password.
-Remove the file after first start if your deployment does not need it.
+You can remove the file after the first start. Casdoor generates the JWT
+signing certificate for each new database; no key is shared between deployments.
 
 Enable TOTP MFA from the account page and store the recovery code offline. A
 recovery code works once; after using it, remove and re-enroll MFA to obtain a
@@ -174,11 +173,10 @@ settings. The following is an example `themeData` value for an organization:
 }
 ```
 
-These upstream Casdoor settings are saved in the database and take effect through
-administrator configuration. Changes to
-frontend components or styles outside the supported settings require rebuilding
-the frontend. Logo/media files need persistent storage separately from their
-configuration records.
+Casdoor saves these settings in its database and applies them without a
+restart. Changes beyond these settings, such as new frontend components, require
+rebuilding the image. Uploaded logos and images need persistent storage; see
+[server configuration](#server-configuration-and-persistence).
 
 ## Typed JWT claims
 
@@ -203,10 +201,10 @@ The emitted claim is an object, rather than a JSON-encoded string. The `value`
 is a JSON string in the application configuration, containing the JSON literal
 to emit. Merge this fragment into an existing application configuration.
 
-The upstream field mappings remain available. Added `JSON` attributes are
-configured through the authenticated application API. Static roles apply to every user of that application, so use
-appropriate per-user mappings when authorizations differ by user. Only trusted
-administrators should select claim fields and values. See [version limitations](RELEASE-STATUS.md) for the customization scope.
+Casdoor's field mappings remain available. `JSON` attributes are set through the
+application API. A fixed value applies to every user of the application; use
+field mappings when authorizations differ by user. Only trusted administrators
+should choose claim fields and values.
 
 Configuration limits: at most 64 `tokenFields` and 64 `tokenAttributes`, claim
 names of 1–256 bytes, and attribute values up to 8192 bytes. Invalid JSON,
@@ -247,15 +245,17 @@ application after a retained certificate is removed; the next global
 administrator save must remove the stale entry. Keep the signing algorithm
 unchanged during an overlap, because older tokens must use the application's
 current algorithm. Without it, the existing single-key behavior is
-preserved. Configure relying-party key distribution separately; see the
-[rotation and upgrade limits](RELEASE-STATUS.md#upgrade-considerations).
+preserved. Application-specific JWKS publishes only the current key, so give
+relying parties the previous key another way during the overlap.
 
 ## Upgrade, rollback and backup
 
 Pin the image by digest and change the digest to upgrade. Casdoor updates its
 tables on startup; settings, clients, signing keys and issued tokens carry over.
-Between `rc.1` and `rc.2`, rolling back to the previous digest is supported in
-both directions. Back up the database before every upgrade.
+Rolling back to the previous release's digest is tested and keeps them too.
+Authorization codes issued just before an upgrade may need a new sign-in. Read
+the [release notes](RELEASE-NOTES.md) and back up the database before every
+upgrade.
 
 With a restricted role named `casdoor`, a consistent online backup and a restore
 into a new database look like this:
