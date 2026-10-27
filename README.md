@@ -19,7 +19,8 @@ registry.thesmos.dev/thesmos/casdoor@sha256:fcb88561aa8aa4080fbc18a307e509ee4f1b
 The tag `v4.15.0-thesmos.2` points to the same image. Deploy by digest so the
 image cannot change under you.
 
-1. [Verify the image signature and SBOM](docs/REGISTRY.md#verify-a-published-image).
+1. [Verify the image signature and SBOM](docs/REGISTRY.md#verify-a-published-image)
+   with cosign 3.0.2 or later; cosign 2 reports `no signatures found`.
 2. Choose a recipe: [Compose](recipes/compose/README.md) for one server, or
    [Kubernetes](recipes/kubernetes/README.md) for a cluster. Both run this image
    against your PostgreSQL database.

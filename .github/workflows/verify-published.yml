@@ -1,0 +1,31 @@
+name: Verify published image
+# Checks that the image named in the README still verifies with the oldest
+# cosign version docs/REGISTRY.md supports.
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      COSIGN_IMAGE: gcr.io/projectsigstore/cosign:v3.0.2@sha256:b29487e48205d875c324c79583e2806d9d269c0fa299e0861bbec023d8430c8b
+      SIGNING_IDENTITY: https://github.com/thesmos-project/casdoor-integration/.github/workflows/publish.yml@refs/heads/main
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Read the announced digest
+        run: |
+          image=$(grep -oE 'registry\.thesmos\.dev/thesmos/casdoor@sha256:[0-9a-f]{64}' README.md | head -n 1)
+          test -n "$image" || { echo 'README names no image digest.' >&2; exit 1; }
+          echo "IMAGE=$image" >> "$GITHUB_ENV"
+      - name: Verify the signature
+        run: docker run --rm "$COSIGN_IMAGE" verify --certificate-identity "$SIGNING_IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com "$IMAGE" > /dev/null
+      - name: Verify the SPDX attestation
+        run: docker run --rm "$COSIGN_IMAGE" verify-attestation --type spdxjson --certificate-identity "$SIGNING_IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com "$IMAGE" > /dev/null
+      - name: Record result
+        run: echo "Verified $IMAGE with cosign 3.0.2." >> "$GITHUB_STEP_SUMMARY"

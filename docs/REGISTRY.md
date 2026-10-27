@@ -6,6 +6,11 @@ Building locally needs no registry account.
 
 ## Verify a published image
 
+You need cosign 3.0.2 or later. The publishing workflow signs with cosign 3,
+which stores the signature and SBOM attestation in the Sigstore bundle format,
+attached to the image. cosign 2 does not read that format and reports
+`no signatures found` even for a correctly signed image.
+
 Use the complete image repository and immutable `sha256:` digest. For the current
 release, set:
 
@@ -27,6 +32,26 @@ cosign verify-attestation --type spdxjson \
   --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
   "$IMAGE_REPOSITORY@$IMAGE_DIGEST"
 ```
+
+Without a local cosign, run the same checks from cosign's own image, pinned by
+digest:
+
+```sh
+COSIGN_IMAGE=gcr.io/projectsigstore/cosign:v3.0.3@sha256:774391ac9f0c137ee419ce56522df5fd3b1f52be90c5b77e97f7c053bdd67a67
+
+docker run --rm "$COSIGN_IMAGE" verify \
+  --certificate-identity 'https://github.com/thesmos-project/casdoor-integration/.github/workflows/publish.yml@refs/heads/main' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  "$IMAGE_REPOSITORY@$IMAGE_DIGEST"
+
+docker run --rm "$COSIGN_IMAGE" verify-attestation --type spdxjson \
+  --certificate-identity 'https://github.com/thesmos-project/casdoor-integration/.github/workflows/publish.yml@refs/heads/main' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  "$IMAGE_REPOSITORY@$IMAGE_DIGEST"
+```
+
+The [published image check](../.github/workflows/verify-published.yml) runs
+these checks with cosign 3.0.2 against the digest in the README every week.
 
 A verified signature identifies the publishing workflow. Check the source
 revision and release channel as well: release candidates (`-rc.N`) are
