@@ -8,6 +8,15 @@
 | Image | `registry.thesmos.dev/thesmos/casdoor@sha256:fcb88561aa8aa4080fbc18a307e509ee4f1bc3901ddbee5cc56492bb05dce003` |
 | Recipes | [Compose](../recipes/compose/README.md), with an optional Caddy HTTPS proxy; [Kubernetes](../recipes/kubernetes/README.md), with a k3s overlay |
 
+## v4.15.0-thesmos.3
+
+- **Shared applications refresh their tokens.** A shared application signs in
+  the people of several organizations. Refreshing or introspecting their tokens
+  was refused because the token's organization differs from the application's
+  `built-in` organization. Tokens now stay bound to the shared application, and
+  to one organization when the client ID names it (`<client ID>-org-<name>`).
+  See [bind tokens to the correct client](PATCHES.md#bind-tokens-to-the-correct-client).
+
 ## v4.15.0-thesmos.2
 
 - **Kubernetes recipe.** Manifests for any cluster, an overlay for k3s with

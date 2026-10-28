@@ -471,10 +471,10 @@ index 978dafd..9ee1cb2 100644
  	}
 diff --git a/object/thesmos_integration_test.go b/object/thesmos_integration_test.go
 new file mode 100644
-index 0000000..d4c568f
+index 0000000..9c5a9cc
 --- /dev/null
 +++ b/object/thesmos_integration_test.go
-@@ -0,0 +1,414 @@
+@@ -0,0 +1,445 @@
 +// Copyright 2026 The Thesmos integration contributors.
 +// Modified for the Thesmos integration evaluation, 2026-10-06.
 +//
@@ -889,6 +889,37 @@ index 0000000..d4c568f
 +		t.Fatalf("a concurrent sign-in lost its session id: %v", stored)
 +	}
 +}
++
++// A shared application belongs to the built-in organization and issues tokens
++// to the people of each organization it serves. Its tokens stay its own for
++// refresh and introspection; an organization suffix binds it to one of them.
++func TestSharedApplicationOwnsTokensOfTheOrganizationsItServes(t *testing.T) {
++	shared := &Application{Owner: "admin", Name: "web", Organization: "built-in", IsShared: true}
++	token := &Token{Owner: "admin", Application: "web", Organization: "acme"}
++	if !tokenBelongsToApplication(token, shared) {
++		t.Fatal("a shared application refused a token it issued to a person of another organization")
++	}
++	suffixed := *shared
++	suffixed.Organization = "acme"
++	if !tokenBelongsToApplication(token, &suffixed) {
++		t.Fatal("a shared application bound to the person's organization refused their token")
++	}
++	suffixed.Organization = "rival"
++	if tokenBelongsToApplication(token, &suffixed) {
++		t.Fatal("a shared application bound to another organization accepted the token")
++	}
++	unshared := *shared
++	unshared.IsShared = false
++	if tokenBelongsToApplication(token, &unshared) {
++		t.Fatal("an application that is not shared accepted a token of another organization")
++	}
++	if tokenBelongsToApplication(&Token{Owner: "admin", Application: "web"}, shared) {
++		t.Fatal("a token without an organization was accepted")
++	}
++	if tokenBelongsToApplication(&Token{Owner: "admin", Application: "other", Organization: "acme"}, shared) {
++		t.Fatal("a token of another application was accepted")
++	}
++}
 diff --git a/object/token.go b/object/token.go
 index 606d2f3..ce259b5 100644
 --- a/object/token.go
@@ -1133,10 +1164,10 @@ index 3ec8874..7e35129 100644
  
 diff --git a/object/token_signing_trust.go b/object/token_signing_trust.go
 new file mode 100644
-index 0000000..8cbddf9
+index 0000000..75b3c15
 --- /dev/null
 +++ b/object/token_signing_trust.go
-@@ -0,0 +1,146 @@
+@@ -0,0 +1,158 @@
 +// Copyright 2026 The Thesmos integration contributors.
 +// Modified for the Thesmos integration evaluation, 2026-10-06.
 +//
@@ -1268,7 +1299,19 @@ index 0000000..8cbddf9
 +
 +func tokenBelongsToApplication(token *Token, application *Application) bool {
 +	return token != nil && application != nil && token.Owner == application.Owner &&
-+		token.Application == application.Name && token.Organization == application.Organization
++		token.Application == application.Name && tokenOrganizationMatches(token, application)
++}
++
++// tokenOrganizationMatches binds a token to the organization its application
++// was resolved for. A shared application belongs to the built-in organization
++// and issues tokens to the people of every organization it serves, so when it
++// is used without an organization suffix any of those tokens is its own; with
++// a "-org-<name>" suffix it is bound to that organization only.
++func tokenOrganizationMatches(token *Token, application *Application) bool {
++	if token.Organization == application.Organization {
++		return true
++	}
++	return application.IsShared && application.Organization == "built-in" && token.Organization != ""
 +}
 +
 +// GetApplicationToken binds introspection to the authenticated application

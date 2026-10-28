@@ -61,6 +61,11 @@ Authorization-code exchange checks the exact redirect URI used to issue the
 code. Introspection and refresh match the stored token's application owner,
 name and organization to the authenticated client. A token issued to one client
 therefore reports `active: false` when another client introspects it.
+A shared application belongs to the built-in organization and signs in the
+people of every organization whose default application it is; its tokens carry
+the person's organization. Used by its plain client ID, it refreshes and
+introspects the tokens it issued to any of those people. Used as
+`<client ID>-org-<organization>`, it stays bound to that one organization.
 
 Applications can also retain up to two previous JWT signing certificates for
 verification during a bounded overlap. Newly issued refresh tokens include a

@@ -6,7 +6,7 @@
   "patches": [
     {
       "path": "patches/casdoor-integration.patch",
-      "sha256": "b790f586fa66e802a45eb1dc2a166a4fc3b8bcf3b9254aa843b1ab36958ab97d",
+      "sha256": "678a8d09f5fb3df5eba7450aafa4ebc73ea69d25ca39f40dc7f450024691ad04",
       "purpose": "SCIM behavior, typed JWT claims, persistent SAML NameIDs, OAuth redirect binding, retained signing-key support and concurrent sign-in session bookkeeping."
     },
     {
