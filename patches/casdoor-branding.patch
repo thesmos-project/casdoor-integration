@@ -272,6 +272,30 @@ index 2986a3e..ba015a4 100644
        </footer>
      </div>
    );
+diff --git a/web/src/index.css b/web/src/index.css
+index f80ee20..588c99b 100644
+--- a/web/src/index.css
++++ b/web/src/index.css
+@@ -1,3 +1,6 @@
++/* Part of Casdoor, licensed under the Apache License 2.0.
++   Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md */
++
+ /* Self-hosted so the console keeps its typography offline and behind a firewall,
+    which a Google Fonts <link> would not. The variable file covers 100..900. */
+ @import "@fontsource-variable/inter/index.css";
+@@ -268,3 +271,12 @@ html.compact {
+     font-size: 16px;
+   }
+ }
++
++/* Toasts with rich colours: Sonner's light text colours fall below the 4.5:1
++   contrast WCAG 2.2 AA asks for text this size; these keep the same hues. */
++html [data-sonner-toaster][data-theme="light"] {
++  --error-text: hsl(0, 75%, 38%);
++  --success-text: hsl(140, 100%, 22%);
++  --warning-text: hsl(31, 92%, 30%);
++  --info-text: hsl(210, 92%, 35%);
++}
 diff --git a/web/src/lib/setting.tsx b/web/src/lib/setting.tsx
 index 260c0f1..0a7daa6 100644
 --- a/web/src/lib/setting.tsx

@@ -123,6 +123,7 @@ always ended with "Powered by Casdoor".
 | A person's account page, reached through a shared application, follows their own organization: its account rows, theme and logo. | The rows an organization shows its people apply, instead of the shared application's organization's. |
 | The forgotten-password link of a shared application keeps the organization it serves, as the sign-up link does. | Password recovery stays on the organization's brand. |
 | The sign-in logo's alternative text is the page's title. | A screen reader names the brand the logo shows. |
+| The text of success, warning, error and information toasts is darker on the light palette. | Their messages, such as a failed sign-in, reach the 4.5:1 contrast WCAG 2.2 AA requires; Sonner's defaults stayed between 3.1:1 and 4.4:1. |
 
 See [themes and branding](CONFIGURATION.md#themes-and-branding).
 
@@ -153,6 +154,6 @@ SHA-256 checksums. Original Casdoor headers and authorship are preserved.
 | [LDAP licence](../patches/casdoor-ldap-license.patch) | Author-provided MIT dependency revision. |
 | [Secure startup](../patches/casdoor-secure-startup.patch) | Bootstrap administrator password, unsafe-setting refusal, RADIUS port handling and Secure cookies behind a proxy. |
 | [Modification notices](../patches/casdoor-modification-notices.patch) | A line in each modified Casdoor source file stating that it was changed, as the Apache License 2.0 requires. |
-| [Branding](../patches/casdoor-branding.patch) | Each organization's brand on a shared application's pages, and an organization footer for the console. |
+| [Branding](../patches/casdoor-branding.patch) | Each organization's brand on a shared application's pages, an organization footer for the console, and readable toast colours. |
 
 Before deploying or upgrading, read the [release notes](RELEASE-NOTES.md).

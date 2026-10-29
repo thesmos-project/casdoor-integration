@@ -16,6 +16,8 @@
 - **Organization footer.** An organization's `footerHtml` replaces "Powered by
   Casdoor" under the console its people use, such as the account page. Only a
   global administrator can change it.
+- **Readable notifications.** Success, warning, error and information messages
+  meet the 4.5:1 text contrast of WCAG 2.2 AA on the light palette.
 - **Every branding setting documented**, for applications and organizations;
   see [themes and branding](CONFIGURATION.md#themes-and-branding).
 

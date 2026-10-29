@@ -45,8 +45,8 @@
     },
     {
       "path": "patches/casdoor-branding.patch",
-      "sha256": "a2481da36d883e1e69d2f411a138f65632e9dad25405528ba16c0dd259741f0b",
-      "purpose": "Each organization brands a shared application's sign-in pages, and its own console footer."
+      "sha256": "3d8bf1a07f24764cc24c402b49a7dbb1f760dbbbb9771cef7abe7c1bd1653805",
+      "purpose": "Each organization brands a shared application's sign-in pages, and its own console footer; toast text meets WCAG 2.2 AA contrast."
     }
   ]
 }
