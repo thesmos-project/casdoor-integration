@@ -84,7 +84,7 @@ index d94d254..02aa6f0 100644
  		if err != nil {
 diff --git a/object/application_brand_test.go b/object/application_brand_test.go
 new file mode 100644
-index 0000000..68c5684
+index 0000000..c25ebf9
 --- /dev/null
 +++ b/object/application_brand_test.go
 @@ -0,0 +1,50 @@
@@ -116,7 +116,7 @@ index 0000000..68c5684
 +	}
 +
 +	// What the organization leaves empty keeps the application's.
-+	plain := &Organization{Name: "plain", ThemeData: &ThemeData{ColorPrimary: "#222222"}}
++	plain := &Organization{Name: "plain", DisplayName: "Plain Company", ThemeData: &ThemeData{ColorPrimary: "#222222"}}
 +	application = shared(plain)
 +	applyServingOrganizationBrand(application, "built-in")
 +	if application.Logo != "https://home.example/logo.svg" || application.Title != "Home" || application.ThemeData.ColorPrimary != "#111111" {
@@ -139,10 +139,10 @@ index 0000000..68c5684
 +	applyServingOrganizationBrand(nil, "built-in")
 +}
 diff --git a/object/application_util.go b/object/application_util.go
-index 6063fdc..dbc438a 100644
+index 6063fdc..8a3dd68 100644
 --- a/object/application_util.go
 +++ b/object/application_util.go
-@@ -63,6 +63,35 @@ func extendApplicationWithOrg(application *Application) (err error) {
+@@ -63,6 +63,37 @@ func extendApplicationWithOrg(application *Application) (err error) {
  	return
  }
  
@@ -160,15 +160,17 @@ index 6063fdc..dbc438a 100644
 +	if organization == nil || organization.Name == homeOrganization {
 +		return
 +	}
++	// the logo and the name it carries go together: without a logo of its
++	// own, the organization keeps the application's logo and title
 +	if organization.Logo != "" {
 +		application.Logo = organization.Logo
 +		application.LogoDark = organization.LogoDark
++		if organization.DisplayName != "" {
++			application.Title = organization.DisplayName
++		}
 +	}
 +	if organization.Favicon != "" {
 +		application.Favicon = organization.Favicon
-+	}
-+	if organization.DisplayName != "" {
-+		application.Title = organization.DisplayName
 +	}
 +	if organization.ThemeData != nil && organization.ThemeData.IsEnabled {
 +		application.ThemeData = organization.ThemeData

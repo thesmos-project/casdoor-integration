@@ -194,9 +194,9 @@ stylesheet, where it cannot run script.
 A shared application (`isShared: true`) signs in the people of several
 organizations. When it is served for one of them, through
 `/login/<organization>` or the client ID `<client ID>-org-<organization>`,
-that organization's `logo`, `logoDark`, `favicon`, display name and enabled
-`themeData` replace the application's; what the organization leaves empty
-keeps the application's. The application's form CSS, background and footer
+that organization's `logo`, `logoDark`, `favicon` and enabled `themeData`
+replace the application's, and with its own logo its display name becomes the
+page's title; what the organization leaves empty keeps the application's. The application's form CSS, background and footer
 stay shared, so set the parts every organization has in common there.
 
 The following is an example `themeData` value:

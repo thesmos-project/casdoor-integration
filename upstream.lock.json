@@ -45,7 +45,7 @@
     },
     {
       "path": "patches/casdoor-branding.patch",
-      "sha256": "187f67dc239d1dc1b9a6af49022806c887ce6952860474a87201bde989a1f488",
+      "sha256": "a2481da36d883e1e69d2f411a138f65632e9dad25405528ba16c0dd259741f0b",
       "purpose": "Each organization brands a shared application's sign-in pages, and its own console footer."
     }
   ]
