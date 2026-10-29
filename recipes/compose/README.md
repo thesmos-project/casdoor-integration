@@ -33,11 +33,11 @@ names the container itself. The configuration and CA must be readable by UID
 ## Start
 
 The recipe runs the published image
-`registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.2`. For production, pin
+`registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.4`. For production, pin
 its exact digest so the image cannot change under you:
 
 ```sh
-export CASDOOR_IMAGE=registry.thesmos.dev/thesmos/casdoor@sha256:fcb88561aa8aa4080fbc18a307e509ee4f1bc3901ddbee5cc56492bb05dce003
+export CASDOOR_IMAGE=registry.thesmos.dev/thesmos/casdoor@sha256:8616a2521c1aa1ed90fa612200fee598a40fe058ded14fb7bd9b2cb5a597a6a3
 docker compose -f recipes/compose/compose.yaml config --quiet
 docker compose -f recipes/compose/compose.yaml up -d
 ```

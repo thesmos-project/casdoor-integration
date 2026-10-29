@@ -1,6 +1,6 @@
 # Security
 
-`v4.15.0-thesmos.2` is the supported release, published as a signed image. The
+`v4.15.0-thesmos.4` is the supported release, published as a signed image. The
 [security review](docs/SECURITY-REVIEW.md) lists the advisories checked against
 its source, and the [release notes](docs/RELEASE-NOTES.md) list security-relevant
 changes.

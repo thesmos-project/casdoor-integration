@@ -16,7 +16,7 @@ release, set:
 
 ```sh
 IMAGE_REPOSITORY=registry.thesmos.dev/thesmos/casdoor
-IMAGE_DIGEST=sha256:fcb88561aa8aa4080fbc18a307e509ee4f1bc3901ddbee5cc56492bb05dce003
+IMAGE_DIGEST=sha256:8616a2521c1aa1ed90fa612200fee598a40fe058ded14fb7bd9b2cb5a597a6a3
 ```
 
 Then run:
