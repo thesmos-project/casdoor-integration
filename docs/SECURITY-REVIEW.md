@@ -2,6 +2,11 @@
 
 Reviewed on 2026-10-07 for `v4.15.0-thesmos.1`. `v4.15.0-thesmos.2` adds the
 `sessionCookieSecure` option and the Kubernetes recipe, with no dependency changes.
+`v4.15.0-thesmos.3` binds refreshed and introspected tokens to the shared
+application that issued them. `v4.15.0-thesmos.4` adds each organization's
+branding on shared applications, the organization footer that only a global
+administrator can change, and readable notification contrast, and moves the
+runtime base to Alpine 3.24.3 with current CA certificates and OpenSSL 3.5.9.
 
 The source is Casdoor `v4.15.0` (commit
 `2301694036cbdcf932b3b1cbef02fb61d9820429`) with the
