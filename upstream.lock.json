@@ -42,6 +42,11 @@
       "path": "patches/casdoor-modification-notices.patch",
       "sha256": "9e670b4bdd638664c44188fc7fb38af77e46c4063ad3c9c7d4048e83e8b07263",
       "purpose": "Notice in each modified Casdoor source file that it was changed, as the Apache License 2.0 requires."
+    },
+    {
+      "path": "patches/casdoor-branding.patch",
+      "sha256": "187f67dc239d1dc1b9a6af49022806c887ce6952860474a87201bde989a1f488",
+      "purpose": "Each organization brands a shared application's sign-in pages, and its own console footer."
     }
   ]
 }

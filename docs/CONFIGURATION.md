@@ -160,8 +160,46 @@ restores upstream behavior with a warning; use it only for local experiments.
 
 ## Themes and branding
 
-Use Casdoor's organization/application editors for supported theme and branding
-settings. The following is an example `themeData` value for an organization:
+Every page your people see can carry your brand without rebuilding the image:
+you set it in Casdoor's application and organization editors, or through the
+API, and Casdoor saves it in its database and applies it on the next page load.
+
+An **application** brands its sign-in, sign-up, forgotten-password, consent and
+error pages:
+
+| Setting | What it changes |
+| --- | --- |
+| `logo`, `logoDark` | The logo above the form, on the light and the dark palette. Its alternative text is `title`, or the application's display name. |
+| `title`, `favicon` | The browser tab. Without them, the organization's display name and favicon. |
+| `themeData` | Primary colour, corner radius, compact mode and a forced light or dark palette; see the example below. Set `isEnabled: true`. |
+| `formCss`, `formCssMobile` | A stylesheet for the page, on large screens and on phones. It can set the palette through the page's CSS variables (`--background`, `--foreground`, `--card`, `--muted-foreground`, `--border`, …, as `H S% L%` values, under `:root` and `.dark`) and load fonts with `@font-face`. Fonts served from another origin need that origin to allow Casdoor's with `Access-Control-Allow-Origin`. |
+| `formBackgroundUrl`, `formBackgroundUrlMobile` | A background image behind the form. |
+| `formOffset`, `formSideHtml` | The form's position; with `formOffset: 4`, `formSideHtml` fills a panel beside it. |
+| `footerHtml` | The line under the page, which otherwise reads "Powered by Casdoor". Casdoor's licence requires no attribution on the page. |
+| `signinHtml`, `signupHtml`, `headerHtml` | Replace or extend the page's own content. |
+
+An **organization** brands the console its people use after signing in, for
+example the account page: `logo`, `logoDark`, `favicon`, `displayName`,
+`themeData` and `footerHtml`, plus `accountItems`, which decides the rows of
+the account page each person sees and may change.
+
+Settings that hold HTML (`footerHtml`, `formSideHtml`, `signinHtml`,
+`signupHtml`, `headerHtml`, `pageHtml`) run as script on Casdoor's own
+origin, so only a global administrator can change them; an organization
+administrator's edit keeps the saved value. Form CSS is inserted as a
+stylesheet, where it cannot run script.
+
+### One application, each organization's brand
+
+A shared application (`isShared: true`) signs in the people of several
+organizations. When it is served for one of them, through
+`/login/<organization>` or the client ID `<client ID>-org-<organization>`,
+that organization's `logo`, `logoDark`, `favicon`, display name and enabled
+`themeData` replace the application's; what the organization leaves empty
+keeps the application's. The application's form CSS, background and footer
+stay shared, so set the parts every organization has in common there.
+
+The following is an example `themeData` value:
 
 ```json
 {

@@ -5,7 +5,7 @@ Reviewed on 2026-10-07 for `v4.15.0-thesmos.1`. `v4.15.0-thesmos.2` adds the
 
 The source is Casdoor `v4.15.0` (commit
 `2301694036cbdcf932b3b1cbef02fb61d9820429`) with the
-[eight patches](PATCHES.md). The project maintainers checked published
+[nine patches](PATCHES.md). The project maintainers checked published
 advisories and dependency scanners against that exact source and image.
 
 ## What was checked
@@ -44,6 +44,7 @@ fixes:
 | [MFA skipped when linking a social account](https://github.com/advisories/GHSA-gv4m-v8c8-hr3g) | `controllers/auth.go`: the linking path checks MFA before signing in. |
 | [File written outside the storage folder](https://github.com/advisories/GHSA-rmxx-v9rj-vpvg) | `storage/local_file_system.go` keeps every path inside the storage folder; `controllers/resource.go` keeps organization administrators inside their own upload paths. |
 | [Script in application HTML](https://github.com/advisories/GHSA-w799-7525-rpr6) | `object/application_util.go`: only a global administrator can change custom HTML. Form CSS is inserted as a stylesheet, where it cannot run script. |
+| Script in organization footer HTML | `object/organization.go`, `controllers/organization.go`: the organization `footerHtml` added by the branding patch follows the same rule; an organization administrator's update keeps the saved value, and only a global administrator sets it when adding an organization. |
 | [Webhook requests to internal addresses](https://github.com/advisories/GHSA-p8c7-hjc4-gwf8) | `object/webhook_util.go`: webhooks of organizations other than `built-in` can reach only public addresses. |
 | [Open redirect](https://github.com/advisories/GHSA-mj24-pqx2-6788) | `object/application_util.go`: redirect URIs must match the application's list; this version also removes the subdomain match described above. |
 | Older records (SQL injection, file write and deletion, SCIM authorization, CSRF, CORS, reflected script, organization editing) | Fixed in Casdoor versions between 1.13.1 and 2.63.0, all older than `v4.15.0`. |

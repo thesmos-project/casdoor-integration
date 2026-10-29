@@ -1,0 +1,333 @@
+diff --git a/controllers/application.go b/controllers/application.go
+index 262046b..32e35ee 100644
+--- a/controllers/application.go
++++ b/controllers/application.go
+@@ -161,6 +161,19 @@ func (c *ApiController) GetUserApplication() {
+ 		return
+ 	}
+ 
++	// a shared application shows its people their own organization: its
++	// account page rows, theme and logo
++	if application.IsShared && application.Organization != user.Owner {
++		shared, err := object.GetApplication(fmt.Sprintf("admin/%s-org-%s", application.Name, user.Owner))
++		if err != nil {
++			c.ResponseError(err.Error())
++			return
++		}
++		if shared != nil {
++			application = shared
++		}
++	}
++
+ 	c.ResponseOk(object.GetMaskedApplication(application, userId))
+ }
+ 
+diff --git a/controllers/organization.go b/controllers/organization.go
+index 5b8ba8a..30a1e75 100644
+--- a/controllers/organization.go
++++ b/controllers/organization.go
+@@ -1,5 +1,7 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
+ //
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
++//
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+ // You may obtain a copy of the License at
+@@ -188,6 +190,11 @@ func (c *ApiController) AddOrganization() {
+ 		organization.AccountItems = object.GetDefaultAccountItems()
+ 	}
+ 
++	// footer HTML runs on Casdoor's origin, see object.Organization.FooterHtml
++	if isGlobalAdmin, _ := c.isGlobalAdmin(); !isGlobalAdmin {
++		organization.FooterHtml = ""
++	}
++
+ 	if len(organization.PasswordOptions) == 0 {
+ 		organization.PasswordOptions = []string{"AtLeast6"}
+ 	}
+diff --git a/object/application.go b/object/application.go
+index d94d254..02aa6f0 100644
+--- a/object/application.go
++++ b/object/application.go
+@@ -283,6 +283,7 @@ func getApplication(owner string, name string) (*Application, error) {
+ 		return nil, err
+ 	}
+ 
++	homeOrganization := application.Organization
+ 	if application.IsShared && sharedOrg != "" {
+ 		application.Organization = sharedOrg
+ 	}
+@@ -297,6 +298,7 @@ func getApplication(owner string, name string) (*Application, error) {
+ 		if err != nil {
+ 			return nil, err
+ 		}
++		applyServingOrganizationBrand(&application, homeOrganization)
+ 
+ 		err = extendApplicationWithSigninMethods(&application)
+ 		if err != nil {
+@@ -389,6 +391,7 @@ func GetApplicationByClientId(clientId string) (*Application, error) {
+ 		return nil, err
+ 	}
+ 
++	homeOrganization := application.Organization
+ 	if application.IsShared && sharedOrg != "" {
+ 		application.Organization = sharedOrg
+ 	}
+@@ -403,6 +406,7 @@ func GetApplicationByClientId(clientId string) (*Application, error) {
+ 		if err != nil {
+ 			return nil, err
+ 		}
++		applyServingOrganizationBrand(&application, homeOrganization)
+ 
+ 		err = extendApplicationWithSigninMethods(&application)
+ 		if err != nil {
+diff --git a/object/application_brand_test.go b/object/application_brand_test.go
+new file mode 100644
+index 0000000..68c5684
+--- /dev/null
++++ b/object/application_brand_test.go
+@@ -0,0 +1,50 @@
++// Part of Casdoor, licensed under the Apache License 2.0.
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
++
++package object
++
++import "testing"
++
++func TestSharedApplicationTakesTheServingOrganizationBrand(t *testing.T) {
++	shared := func(organization *Organization) *Application {
++		return &Application{
++			IsShared: true, Organization: organization.Name, OrganizationObj: organization,
++			Logo: "https://home.example/logo.svg", LogoDark: "https://home.example/logo-dark.svg",
++			Title: "Home", Favicon: "https://home.example/favicon.svg",
++			ThemeData: &ThemeData{ColorPrimary: "#111111", IsEnabled: true},
++		}
++	}
++
++	brand := &ThemeData{ColorPrimary: "#1f5f8b", IsEnabled: true}
++	tenant := &Organization{Name: "tidewater", DisplayName: "Tidewater Plumbing",
++		Logo: "https://tidewater.example/logo.svg", Favicon: "https://tidewater.example/favicon.svg", ThemeData: brand}
++	application := shared(tenant)
++	applyServingOrganizationBrand(application, "built-in")
++	if application.Logo != tenant.Logo || application.LogoDark != "" || application.Favicon != tenant.Favicon ||
++		application.Title != "Tidewater Plumbing" || application.ThemeData != brand {
++		t.Fatalf("served for its organization, the application shows %+v", application)
++	}
++
++	// What the organization leaves empty keeps the application's.
++	plain := &Organization{Name: "plain", ThemeData: &ThemeData{ColorPrimary: "#222222"}}
++	application = shared(plain)
++	applyServingOrganizationBrand(application, "built-in")
++	if application.Logo != "https://home.example/logo.svg" || application.Title != "Home" || application.ThemeData.ColorPrimary != "#111111" {
++		t.Fatalf("an unbranded organization changed the application: %+v", application)
++	}
++
++	// Served for its own organization, or not shared, it keeps its brand.
++	home := &Organization{Name: "built-in", DisplayName: "Built-in", Logo: "https://other.example/logo.svg"}
++	application = shared(home)
++	applyServingOrganizationBrand(application, "built-in")
++	if application.Logo != "https://home.example/logo.svg" {
++		t.Fatal("the home organization replaced the application's own brand")
++	}
++	application = shared(tenant)
++	application.IsShared = false
++	applyServingOrganizationBrand(application, "built-in")
++	if application.Logo != "https://home.example/logo.svg" {
++		t.Fatal("an application that is not shared took an organization's brand")
++	}
++	applyServingOrganizationBrand(nil, "built-in")
++}
+diff --git a/object/application_util.go b/object/application_util.go
+index 6063fdc..dbc438a 100644
+--- a/object/application_util.go
++++ b/object/application_util.go
+@@ -63,6 +63,35 @@ func extendApplicationWithOrg(application *Application) (err error) {
+ 	return
+ }
+ 
++// applyServingOrganizationBrand gives a shared application served for one of
++// the organizations that use it that organization's brand: its logo, favicon,
++// name and theme replace the application's, so each organization's people
++// sign in on their own brand. What the organization leaves empty keeps the
++// application's. homeOrganization is the organization that owns the
++// application; served for it, the application keeps its own brand.
++func applyServingOrganizationBrand(application *Application, homeOrganization string) {
++	if application == nil || !application.IsShared {
++		return
++	}
++	organization := application.OrganizationObj
++	if organization == nil || organization.Name == homeOrganization {
++		return
++	}
++	if organization.Logo != "" {
++		application.Logo = organization.Logo
++		application.LogoDark = organization.LogoDark
++	}
++	if organization.Favicon != "" {
++		application.Favicon = organization.Favicon
++	}
++	if organization.DisplayName != "" {
++		application.Title = organization.DisplayName
++	}
++	if organization.ThemeData != nil && organization.ThemeData.IsEnabled {
++		application.ThemeData = organization.ThemeData
++	}
++}
++
+ func extendApplicationWithSigninItems(application *Application) (err error) {
+ 	if len(application.SigninItems) == 0 {
+ 		signinItem := &SigninItem{
+diff --git a/object/organization.go b/object/organization.go
+index 7170f96..45b56f2 100644
+--- a/object/organization.go
++++ b/object/organization.go
+@@ -1,5 +1,7 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
+ //
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
++//
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+ // You may obtain a copy of the License at
+@@ -59,6 +61,7 @@ type Organization struct {
+ 	Logo                   string     `xorm:"varchar(200)" json:"logo"`
+ 	LogoDark               string     `xorm:"varchar(200)" json:"logoDark"`
+ 	Favicon                string     `xorm:"varchar(200)" json:"favicon"`
++	FooterHtml             string     `xorm:"mediumtext" json:"footerHtml"`
+ 	HasPrivilegeConsent    bool       `xorm:"bool" json:"hasPrivilegeConsent"`
+ 	PasswordType           string     `xorm:"varchar(100)" json:"passwordType"`
+ 	PasswordSalt           string     `xorm:"varchar(100)" json:"passwordSalt"`
+@@ -288,6 +291,7 @@ func UpdateOrganization(id string, organization *Organization, isGlobalAdmin boo
+ 		organization.NavItems = org.NavItems
+ 		organization.UserNavItems = org.UserNavItems
+ 		organization.WidgetItems = org.WidgetItems
++		organization.FooterHtml = org.FooterHtml
+ 		organization.OrgBalance = org.OrgBalance
+ 		organization.UserBalance = org.UserBalance
+ 		organization.BalanceCredit = org.BalanceCredit
+@@ -466,7 +470,14 @@ func GetDefaultApplication(id string) (*Application, error) {
+ 		if defaultApplication == nil {
+ 			return nil, fmt.Errorf("The default application: %s does not exist", organization.DefaultApplication)
+ 		} else {
++			homeOrganization := defaultApplication.Organization
+ 			defaultApplication.Organization = organization.Name
++			// a shared application serves this organization's people on
++			// this organization's brand
++			if defaultApplication.IsShared {
++				defaultApplication.OrganizationObj = organization
++				applyServingOrganizationBrand(defaultApplication, homeOrganization)
++			}
+ 			return defaultApplication, nil
+ 		}
+ 	}
+diff --git a/web/src/components/auth/AuthLayout.tsx b/web/src/components/auth/AuthLayout.tsx
+index 6033f38..9f2616f 100644
+--- a/web/src/components/auth/AuthLayout.tsx
++++ b/web/src/components/auth/AuthLayout.tsx
+@@ -1,3 +1,6 @@
++// Part of Casdoor, licensed under the Apache License 2.0.
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
++
+ import * as React from "react";
+ import i18next from "i18next";
+ import {AlertCircle, ArrowLeft} from "lucide-react";
+@@ -292,10 +295,10 @@ export function AuthLayout({
+                 <div className="login-logo-box mb-6 flex justify-center">
+                   {application?.homepageUrl ? (
+                     <a href={application.homepageUrl} target="_blank" rel="noreferrer">
+-                      <img src={logo} alt={application?.displayName ?? "Casdoor"} className="h-10 max-w-full object-contain" />
++                      <img src={logo} alt={application?.title || application?.displayName || "Casdoor"} className="h-10 max-w-full object-contain" />
+                     </a>
+                   ) : (
+-                    <img src={logo} alt={application?.displayName ?? "Casdoor"} className="h-10 max-w-full object-contain" />
++                    <img src={logo} alt={application?.title || application?.displayName || "Casdoor"} className="h-10 max-w-full object-contain" />
+                   )}
+                 </div>
+               )}
+diff --git a/web/src/components/layout/AppLayout.tsx b/web/src/components/layout/AppLayout.tsx
+index 2986a3e..ba015a4 100644
+--- a/web/src/components/layout/AppLayout.tsx
++++ b/web/src/components/layout/AppLayout.tsx
+@@ -1,3 +1,6 @@
++// Part of Casdoor, licensed under the Apache License 2.0.
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
++
+ import * as React from "react";
+ import * as Cookie from "cookie";
+ import {Outlet} from "react-router-dom";
+@@ -66,7 +69,12 @@ export function AppLayout() {
+         id="footer"
+         className="shrink-0 border-t bg-background py-3 text-center text-xs text-muted-foreground"
+       >
+-        <PoweredBy />
++        {account?.organization?.footerHtml ? (
++          // the organization's own footer, set by a global administrator
++          <span dangerouslySetInnerHTML={{__html: account.organization.footerHtml}} />
++        ) : (
++          <PoweredBy />
++        )}
+       </footer>
+     </div>
+   );
+diff --git a/web/src/lib/setting.tsx b/web/src/lib/setting.tsx
+index 260c0f1..0a7daa6 100644
+--- a/web/src/lib/setting.tsx
++++ b/web/src/lib/setting.tsx
+@@ -1,5 +1,7 @@
+ // Copyright 2021 The Casdoor Authors. All Rights Reserved.
+ //
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
++//
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+ // You may obtain a copy of the License at
+@@ -2495,7 +2497,11 @@ export function getForgetLink(application) {
+   } else if (authConfig.appName === application.name) {
+     return "/forget";
+   } else if (!application.forgetUrl) {
+-    return `/forget/${application.name}`;
++    // a shared application keeps the organization it serves, and its brand,
++    // the way getSignupLink() does
++    return application.isShared && application.organization
++      ? `/forget/${application.name}-org-${application.organization}`
++      : `/forget/${application.name}`;
+   }
+   return application.forgetUrl;
+ }
+diff --git a/web/src/pages/OrganizationEditPage.tsx b/web/src/pages/OrganizationEditPage.tsx
+index ddecfbc..32e57c7 100644
+--- a/web/src/pages/OrganizationEditPage.tsx
++++ b/web/src/pages/OrganizationEditPage.tsx
+@@ -1,3 +1,6 @@
++// Part of Casdoor, licensed under the Apache License 2.0.
++// Modified by the Thesmos integration contributors in 2026. See https://github.com/thesmos-project/casdoor-integration/blob/main/docs/PATCHES.md
++
+ import * as React from "react";
+ import i18next from "i18next";
+ import {Link, useNavigate, useParams} from "react-router-dom";
+@@ -14,6 +17,7 @@ import {NavItemTree, WidgetItemTree} from "@/components/common/NavItemTree";
+ import {SearchableSelect} from "@/components/common/SearchableSelect";
+ import {SelectField} from "@/components/common/SelectField";
+ import {TagsInput} from "@/components/common/TagsInput";
++import {CodeEditor} from "@/components/common/CodeEditor";
+ import {ThemeEditor} from "@/components/common/ThemeEditor";
+ import {EditPageShell} from "@/components/crud/EditPageShell";
+ import {EditableTable} from "@/components/crud/EditableTable";
+@@ -256,6 +260,16 @@ export default function OrganizationEditPage() {
+           <FormRow labelKey="organization:Website URL">
+             <Input value={organization.websiteUrl ?? ""} onChange={(e) => update("websiteUrl", e.target.value)} />
+           </FormRow>
++          {/* footer HTML runs on Casdoor's origin, so only a global administrator edits it */}
++          {Setting.isAdminUser(account) ? (
++            <FormRow labelKey="application:Footer HTML" block>
++              <CodeEditor
++                language="html"
++                value={organization.footerHtml ?? ""}
++                onChange={(value) => update("footerHtml", value)}
++              />
++            </FormRow>
++          ) : null}
+           <FormRow labelKey="general:Default avatar">
+             <div className="space-y-2">
+               <Input

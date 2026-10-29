@@ -109,6 +109,23 @@ it and refuses to connect without it. See
 [database syncers through an SSH tunnel](CONFIGURATION.md#database-syncers-through-an-ssh-tunnel).
 The [security review](SECURITY-REVIEW.md) lists the advisories checked for this version.
 
+## Brand each organization's pages
+
+One shared application can sign in the people of several organizations, such
+as a property manager and the contractor companies it works with. Casdoor
+showed every one of them the application's logo and theme, and the console
+always ended with "Powered by Casdoor".
+
+| Change | Why it matters |
+| --- | --- |
+| A shared application served for an organization takes that organization's logo, favicon, display name and enabled theme. | Each company's people sign in on their own brand through one application. |
+| An organization has a `footerHtml`, which replaces the console's default footer. | The account pages carry the organization's brand. Like an application's custom HTML, only a global administrator can change it. |
+| A person's account page, reached through a shared application, follows their own organization: its account rows, theme and logo. | The rows an organization shows its people apply, instead of the shared application's organization's. |
+| The forgotten-password link of a shared application keeps the organization it serves, as the sign-up link does. | Password recovery stays on the organization's brand. |
+| The sign-in logo's alternative text is the page's title. | A screen reader names the brand the logo shows. |
+
+See [themes and branding](CONFIGURATION.md#themes-and-branding).
+
 ## Update dependencies and distribution material
 
 Backend changes update Go dependencies, including the Coraza web application
@@ -136,5 +153,6 @@ SHA-256 checksums. Original Casdoor headers and authorship are preserved.
 | [LDAP licence](../patches/casdoor-ldap-license.patch) | Author-provided MIT dependency revision. |
 | [Secure startup](../patches/casdoor-secure-startup.patch) | Bootstrap administrator password, unsafe-setting refusal, RADIUS port handling and Secure cookies behind a proxy. |
 | [Modification notices](../patches/casdoor-modification-notices.patch) | A line in each modified Casdoor source file stating that it was changed, as the Apache License 2.0 requires. |
+| [Branding](../patches/casdoor-branding.patch) | Each organization's brand on a shared application's pages, and an organization footer for the console. |
 
 Before deploying or upgrading, read the [release notes](RELEASE-NOTES.md).

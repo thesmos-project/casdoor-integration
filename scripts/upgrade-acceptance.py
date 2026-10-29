@@ -20,6 +20,12 @@ from acceptance_fixture import ROOT, RecipeFixture, Session, jwt_header, run
 PREVIOUS = "registry.thesmos.dev/thesmos/casdoor@sha256:9554e0694f6c869e45d9eae767e1111d543e8d1c5fc3a0afbd6e39fc43271962"
 CANDIDATE = "casdoor-integration:candidate"
 THEME = {"themeType": "default", "colorPrimary": "#2f6f5e", "borderRadius": 9, "isCompact": False, "isEnabled": True}
+# Application branding a customer sets in the console; every field must survive.
+BRAND = {"logo": "https://brand.example/logo.svg", "logoDark": "https://brand.example/logo-dark.svg",
+         "title": "Upgrade brand", "favicon": "https://brand.example/favicon.svg",
+         "formCss": "body { font-family: Georgia, serif; }", "formBackgroundUrl": "https://brand.example/background.jpg",
+         "footerHtml": "<a href=\"https://brand.example/\">Upgrade brand</a>"}
+ORGANIZATION_FOOTER = "<a href=\"https://brand.example/help\">Upgrade brand help</a>"
 
 
 def main():
@@ -73,6 +79,13 @@ def main():
     def theme():
         return admin().call("/api/get-organization?id=admin/built-in")["data"].get("themeData")
 
+    def brand():
+        app = application(admin())
+        return {name: app.get(name) for name in BRAND}
+
+    def organization_footer():
+        return admin().call("/api/get-organization?id=admin/upgrade-org")["data"].get("footerHtml")
+
     def application(session):
         return session.call("/api/get-application?id=admin/upgrade-app")["data"]
 
@@ -112,7 +125,7 @@ def main():
         app = copy.deepcopy(session.call("/api/get-application?id=admin/app-built-in")["data"])
         app.update(name="upgrade-app", displayName="Upgrade acceptance", clientId=client_id, clientSecret=client_secret,
                    organization="upgrade-org", cert="cert-built-in", tokenFormat="JWT", grantTypes=["password", "refresh_token"],
-                   redirectUris=[base + "/callback"])
+                   redirectUris=[base + "/callback"], **BRAND)
         created = session.call("/api/add-application", app)
         added = session.call("/api/add-user", {"owner": "upgrade-org", "name": "upgrade-reader", "displayName": "Upgrade reader",
                                               "password": reader_password, "type": "normal-user", "signupApplication": "upgrade-app"})
@@ -125,7 +138,13 @@ def main():
 
         # Upgrade.
         switch(options.image, "Candidate")
-        check("Upgrade keeps theme and client configuration", theme() == THEME and application(admin())["clientId"] == client_id)
+        check("Upgrade keeps theme, branding and client configuration",
+              theme() == THEME and brand() == BRAND and application(admin())["clientId"] == client_id)
+        session = admin()
+        tenant = session.call("/api/get-organization?id=admin/upgrade-org")["data"]
+        tenant["footerHtml"] = ORGANIZATION_FOOTER
+        session.call("/api/update-organization?id=admin/upgrade-org", tenant)
+        check("Candidate saves an organization footer", organization_footer() == ORGANIZATION_FOOTER)
         check("Upgrade keeps the signing key", jwks() == keys_before)
         check("Token issued before upgrade remains active", active(before["access_token"]))
         check("Refresh token issued before upgrade still refreshes", refresh(before))
@@ -133,12 +152,13 @@ def main():
 
         # Rollback.
         switch(options.previous, "Rollback to previous release")
-        check("Rollback keeps theme and signing key", theme() == THEME and jwks() == keys_before)
+        check("Rollback keeps theme, branding and signing key", theme() == THEME and brand() == BRAND and jwks() == keys_before)
         check("Token issued by the candidate remains active after rollback", active(upgraded["access_token"]))
         check("Refresh token issued by the candidate refreshes after rollback", refresh(upgraded))
 
         # Upgrade again, then rotate the signing key with a retained previous key.
         switch(options.image, "Second upgrade")
+        check("Second upgrade keeps the organization footer", organization_footer() == ORGANIZATION_FOOTER)
         session = admin()
         cert = session.call("/api/add-cert", {"owner": "admin", "name": "upgrade-rotated", "displayName": "Rotated key",
                                               "scope": "JWT", "type": "x509", "cryptoAlgorithm": "RS256", "bitSize": 2048,
@@ -175,6 +195,7 @@ def main():
         switch(options.image, "Restored backup")
         databases = fixture.psql("select distinct datname from pg_stat_activity where usename='casdoor'").stdout.split()
         check("Restored instance uses only the restored database", databases == ["casdoor_restore"])
+        check("Restore keeps branding and the organization footer", brand() == BRAND and organization_footer() == ORGANIZATION_FOOTER)
         check("Restore keeps theme, client and signing key", theme() == THEME and application(admin())["cert"] == "upgrade-rotated"
               and jwks() == keys_backup)
         check("Token issued before the backup remains active after restore", active(retained_token["access_token"]))
