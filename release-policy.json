@@ -19,9 +19,9 @@
       "source_and_patch_provenance": true,
       "build_and_runtime_smoke": true
     },
-    "reviewed_by": "Codex: scoped local maintainer distribution review; independent production review pending",
+    "reviewed_by": "Codex, at the project owner's instruction on 2026-11-08: fresh source export of ten patches, local candidate build of v4.15.0-thesmos.5-rc.1, licence coverage report, SBOM and image smoke test; independent production review still pending",
     "acceptance_evidence": "docs/VALIDATION.md",
-    "accepted_build_inputs_sha256": "828c9c88e77d82a7612fb255478b4fa99a36cb5a071c76735a6a758ace7642a0"
+    "accepted_build_inputs_sha256": "ad975592a66a7077c86cc4b818f7e4bd15d9c26f6cc91a9146c8c9e9f3567ad0"
   },
   "note": "v4.15.0-thesmos.4 accepted for production and stable publication. Release candidates use the candidate policy."
 }

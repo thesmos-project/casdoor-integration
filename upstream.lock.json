@@ -47,6 +47,11 @@
       "path": "patches/casdoor-branding.patch",
       "sha256": "3d8bf1a07f24764cc24c402b49a7dbb1f760dbbbb9771cef7abe7c1bd1653805",
       "purpose": "Each organization brands a shared application's sign-in pages, and its own console footer; toast text meets WCAG 2.2 AA contrast."
+    },
+    {
+      "path": "patches/casdoor-claim-errors.patch",
+      "sha256": "0999709424b730cdcff3da2db734d6a516c75773424f9ae9cf88419bb0609578",
+      "purpose": "Name the allowed claim categories and types in validation errors, and explain that a reserved claim name needs another name."
     }
   ]
 }
