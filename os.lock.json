@@ -115,10 +115,10 @@
     },
     {
       "name": "tzdata",
-      "version": "2026e-r0",
+      "version": "2026f-r0",
       "license": "Public-Domain",
       "origin": "tzdata",
-      "aports_commit": "faa135a1a22c90309bf381766a7cc47490dea786"
+      "aports_commit": "63faba7f731ad47f4cd60d3ff34ff1aadd49c091"
     },
     {
       "name": "zlib",
