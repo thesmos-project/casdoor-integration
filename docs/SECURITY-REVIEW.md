@@ -7,10 +7,13 @@ application that issued them. `v4.15.0-thesmos.4` adds each organization's
 branding on shared applications, the organization footer that only a global
 administrator can change, and readable notification contrast, and moves the
 runtime base to Alpine 3.24.3 with current CA certificates and OpenSSL 3.5.9.
+`v4.15.0-thesmos.5` changes only the text of claim validation errors, which now
+quote the rejected value, and updates `tzdata` to `2026f-r0`; it adds no
+dependency.
 
 The source is Casdoor `v4.15.0` (commit
 `2301694036cbdcf932b3b1cbef02fb61d9820429`) with the
-[nine patches](PATCHES.md). The project maintainers checked published
+[ten patches](PATCHES.md). The project maintainers checked published
 advisories and dependency scanners against that exact source and image.
 
 ## What was checked
