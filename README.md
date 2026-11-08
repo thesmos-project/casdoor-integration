@@ -10,13 +10,13 @@ contributors; their authorship, licences and notices are kept.
 
 ## Deploy
 
-The current release is `v4.15.0-thesmos.4` for `linux/amd64`:
+The current release is `v4.15.0-thesmos.5` for `linux/amd64`:
 
 ```text
-registry.thesmos.dev/thesmos/casdoor@sha256:8616a2521c1aa1ed90fa612200fee598a40fe058ded14fb7bd9b2cb5a597a6a3
+registry.thesmos.dev/thesmos/casdoor@sha256:edb3af265134c25ff1b0d209ab214b5269f865a1c706f602e83d8f7a0155a59c
 ```
 
-The tag `v4.15.0-thesmos.4` points to the same image. Deploy by digest so the
+The tag `v4.15.0-thesmos.5` points to the same image. Deploy by digest so the
 image cannot change under you.
 
 1. [Verify the image signature and SBOM](docs/REGISTRY.md#verify-a-published-image)

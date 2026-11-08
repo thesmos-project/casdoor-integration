@@ -163,5 +163,6 @@ SHA-256 checksums. Original Casdoor headers and authorship are preserved.
 | [Secure startup](../patches/casdoor-secure-startup.patch) | Bootstrap administrator password, unsafe-setting refusal, RADIUS port handling and Secure cookies behind a proxy. |
 | [Modification notices](../patches/casdoor-modification-notices.patch) | A line in each modified Casdoor source file stating that it was changed, as the Apache License 2.0 requires. |
 | [Branding](../patches/casdoor-branding.patch) | Each organization's brand on a shared application's pages, an organization footer for the console, and readable toast colours. |
+| [Claim errors](../patches/casdoor-claim-errors.patch) | Claim validation errors that name the allowed categories and types, and say when a reserved claim name needs another name. |
 
 Before deploying or upgrading, read the [release notes](RELEASE-NOTES.md).
