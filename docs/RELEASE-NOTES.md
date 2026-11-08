@@ -10,6 +10,10 @@
 
 ## v4.15.0-thesmos.5-rc.1
 
+Published candidate: `registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.5-rc.1`,
+digest `sha256:469a58c02d5ac71165a7a911868792b5c01b7c3d3784a922719ea904b470e4ed`,
+signed and attested by the publish workflow.
+
 - **Claim validation errors name the allowed values.** Unknown categories and
   types list what is accepted, and a reserved claim name says that another name
   is required. The documentation also covers public clients that omit the
