@@ -55,6 +55,14 @@ claims separately from the application's custom payload.
 
 See the [typed JWT claim example](CONFIGURATION.md#typed-jwt-claims).
 
+## Explain claim validation errors
+
+Claim validation errors now name the allowed categories (`Static Value`,
+`Existing Field`) and types (`String`, `Array`, `JSON`), and say that a reserved
+name such as `roles` cannot carry another type. Previously the error reported the
+conflict without the alternatives, so an administrator had to guess which values
+the image accepts.
+
 ## Bind tokens to the correct client
 
 Authorization-code exchange checks the exact redirect URI used to issue the

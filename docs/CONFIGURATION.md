@@ -118,7 +118,9 @@ sets it. Leave it unset when you open Casdoor directly over HTTP, such as
 
 `initDataNewOnly=true` is the image default: an initialization file only adds
 records that do not exist yet. With `false`, Casdoor replaces the users and
-certificates the file defines on every restart.
+certificates the file defines on every restart. An application or role change in
+the file is ignored while the stored record exists, so reset the database volume
+when testing a new initialization file, or set the value to `false` deliberately.
 
 ## Initial administrator and secure startup
 
@@ -253,6 +255,15 @@ another name such as `role_names`. Protected
 names are `iss`, `sub`, `aud`, `exp`, `nbf`, `iat`, `jti`, `tokenType`, `azp`,
 `nonce`, `scope` and `cnf`. Custom refresh tokens retain protocol claims without
 the application's custom claim payload.
+
+## Public clients and PKCE
+
+An authorization-code client running in a browser can omit `client_secret` from
+its token request: Casdoor treats an empty secret as a public client and still
+checks the application's grant types and the exact redirect URI used to issue
+the code. Register each redirect URI exactly, including its trailing slash.
+Keep a secret on the server for a confidential client that shares the same
+application.
 
 ## Persistent SAML identity
 

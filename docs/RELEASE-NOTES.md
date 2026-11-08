@@ -8,6 +8,13 @@
 | Image | `registry.thesmos.dev/thesmos/casdoor@sha256:8616a2521c1aa1ed90fa612200fee598a40fe058ded14fb7bd9b2cb5a597a6a3` |
 | Recipes | [Compose](../recipes/compose/README.md), with an optional Caddy HTTPS proxy; [Kubernetes](../recipes/kubernetes/README.md), with a k3s overlay |
 
+## v4.15.0-thesmos.5-rc.1
+
+- **Claim validation errors name the allowed values.** Unknown categories and
+  types list what is accepted, and a reserved claim name says that another name
+  is required. The documentation also covers public clients that omit the
+  client secret and the limits of `initDataNewOnly`.
+
 ## v4.15.0-thesmos.4
 
 - **Each organization's brand on a shared application.** Served for one of the
