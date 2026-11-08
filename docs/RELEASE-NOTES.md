@@ -14,6 +14,8 @@
   types list what is accepted, and a reserved claim name says that another name
   is required. The documentation also covers public clients that omit the
   client secret and the limits of `initDataNewOnly`.
+- **Packaging lock follows the current Alpine revisions.** `tzdata` moved from
+  `2026e-r0` to `2026f-r0`; the corresponding source kit was rebuilt for it.
 
 ## v4.15.0-thesmos.4
 
