@@ -8,11 +8,11 @@
 | Image | `registry.thesmos.dev/thesmos/casdoor@sha256:8616a2521c1aa1ed90fa612200fee598a40fe058ded14fb7bd9b2cb5a597a6a3` |
 | Recipes | [Compose](../recipes/compose/README.md), with an optional Caddy HTTPS proxy; [Kubernetes](../recipes/kubernetes/README.md), with a k3s overlay |
 
-## v4.15.0-thesmos.5-rc.1
+## v4.15.0-thesmos.5
 
-Published candidate: `registry.thesmos.dev/thesmos/casdoor:v4.15.0-thesmos.5-rc.1`,
-digest `sha256:469a58c02d5ac71165a7a911868792b5c01b7c3d3784a922719ea904b470e4ed`,
-signed and attested by the publish workflow.
+Promotes the candidate `v4.15.0-thesmos.5-rc.1`
+(`sha256:469a58c02d5ac71165a7a911868792b5c01b7c3d3784a922719ea904b470e4ed`)
+to the stable channel, after the project owner's acceptance.
 
 - **Claim validation errors name the allowed values.** Unknown categories and
   types list what is accepted, and a reserved claim name says that another name
